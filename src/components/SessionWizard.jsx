@@ -2,23 +2,19 @@ import useSessionStore from '../store/sessionStore';
 import SourceInput from './SourceInput';
 import ConfidenceSlider from './ConfidenceSlider';
 import VoiceRecorder from './VoiceRecorder';
-import AnalysisView from './AnalysisView';
-import SocraticLoop from './SocraticLoop';
+import TutorialConversation from './TutorialConversation';
 import LearningCard from './LearningCard';
-import LoadingState from './ui/LoadingState';
 import { ArrowLeft } from 'lucide-react';
 
 const STEP_LABELS = {
-  source: 'Choose Topic',
+  source: 'Topic',
   confidence: 'Self-Assess',
   recording: 'Explain',
-  analyzing: 'Analyzing',
-  analysis: 'Review',
-  socratic: 'Questions',
+  tutorial: 'Tutorial',
   card: 'Session Card',
 };
 
-const STEP_ORDER = ['source', 'confidence', 'recording', 'analyzing', 'analysis', 'socratic', 'card'];
+const STEP_ORDER = ['source', 'confidence', 'recording', 'tutorial', 'card'];
 
 export default function SessionWizard({ onComplete, onBack }) {
   const step = useSessionStore((s) => s.step);
@@ -26,18 +22,17 @@ export default function SessionWizard({ onComplete, onBack }) {
 
   return (
     <div className="animate-fade-in">
-      {/* Progress + back button */}
-      <div className="flex items-center gap-4 mb-8">
+      {/* Progress + back */}
+      <div className="flex items-center gap-4 mb-6">
         <button
           onClick={onBack}
           className="text-warm-400 hover:text-warm-600 transition-colors"
-          title="Back to history"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
           <div className="flex gap-1.5">
-            {STEP_ORDER.filter(s => s !== 'analyzing').map((s, i) => (
+            {STEP_ORDER.map((s) => (
               <div
                 key={s}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
@@ -47,7 +42,7 @@ export default function SessionWizard({ onComplete, onBack }) {
             ))}
           </div>
           <p className="text-xs text-warm-400 mt-1.5">
-            {STEP_LABELS[step]}
+            {STEP_LABELS[step] || step}
           </p>
         </div>
       </div>
@@ -56,9 +51,7 @@ export default function SessionWizard({ onComplete, onBack }) {
       {step === 'source' && <SourceInput />}
       {step === 'confidence' && <ConfidenceSlider />}
       {step === 'recording' && <VoiceRecorder />}
-      {step === 'analyzing' && <LoadingState />}
-      {step === 'analysis' && <AnalysisView />}
-      {step === 'socratic' && <SocraticLoop />}
+      {step === 'tutorial' && <TutorialConversation />}
       {step === 'card' && <LearningCard onDone={onComplete} />}
     </div>
   );

@@ -1,7 +1,7 @@
 import { CheckCircle, AlertTriangle, Lightbulb, ArrowRight, BookOpen } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
 import { saveSession } from '../api/supabase';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function LearningCard({ onDone }) {
   const topic = useSessionStore((s) => s.topic);
@@ -21,9 +21,11 @@ export default function LearningCard({ onDone }) {
   const addSession = useSessionStore((s) => s.addSession);
 
   const [saved, setSaved] = useState(false);
+  const savingRef = useRef(false);
 
   useEffect(() => {
-    if (saved) return;
+    if (saved || savingRef.current) return;
+    savingRef.current = true;
     const doSave = async () => {
       try {
         const session = await saveSession({

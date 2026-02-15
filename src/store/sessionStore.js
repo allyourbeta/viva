@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const STEPS = ['source', 'confidence', 'recording', 'analyzing', 'analysis', 'socratic', 'card'];
+const STEPS = ['source', 'confidence', 'recording', 'tutorial', 'card'];
 
 const initialSessionState = {
   step: 'source',

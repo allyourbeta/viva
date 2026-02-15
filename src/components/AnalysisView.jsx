@@ -47,6 +47,7 @@ export default function AnalysisView() {
   const confidenceGap = confidenceBefore - (analysis.confidence_assessment || 0);
 
   const handleStartQuestions = async () => {
+    setError(null);
     setStep('analyzing');
     try {
       const questions = await generateSocraticQuestions(analysis, sourceText);

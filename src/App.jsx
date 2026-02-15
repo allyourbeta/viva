@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSessionStore from './store/sessionStore';
 import SessionHistory from './components/SessionHistory';
 import SessionWizard from './components/SessionWizard';
 import Layout from './components/Layout';
+import { preloadVoices } from './services/speechService';
 
 export default function App() {
   const [view, setView] = useState('history');
   const resetSession = useSessionStore((s) => s.resetSession);
+
+  useEffect(() => {
+    preloadVoices();
+  }, []);
 
   const startNewSession = () => {
     resetSession();

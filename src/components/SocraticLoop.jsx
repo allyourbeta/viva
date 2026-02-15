@@ -93,6 +93,15 @@ export default function SocraticLoop() {
       setStep('card');
     } catch (err) {
       console.error('Card generation failed:', err);
+      setLearningCard({
+        confidence_after: null,
+        concepts_mastered: [],
+        remaining_gaps: [],
+        key_correction: null,
+        one_thing_to_remember: 'Card generation failed — but you still completed the session!',
+        meta_learning_insight: null,
+        next_session_seed: null,
+      });
       setStep('card');
     }
   };

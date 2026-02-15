@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { Mic, Square, Keyboard } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Mic, Square, Keyboard, Clock } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
 import { isSupported, startListening, stopListening } from '../services/speechService';
-import { analyzeExplanation } from '../api/claude';
+import { startChunkedAnalysis, stopChunkedAnalysis, getCallCount } from '../services/chunkedAnalysis';
+
+const MAX_RECORDING_SECONDS = 60;
 
 export default function VoiceRecorder() {
   const topic = useSessionStore((s) => s.topic);
@@ -13,8 +15,6 @@ export default function VoiceRecorder() {
   const setIsRecording = useSessionStore((s) => s.setIsRecording);
   const setTranscript = useSessionStore((s) => s.setTranscript);
   const setRecordingDuration = useSessionStore((s) => s.setRecordingDuration);
-  const setAnalysis = useSessionStore((s) => s.setAnalysis);
-  const setRouting = useSessionStore((s) => s.setRouting);
   const setStep = useSessionStore((s) => s.setStep);
   const setError = useSessionStore((s) => s.setError);
 
@@ -22,11 +22,28 @@ export default function VoiceRecorder() {
   const [textInput, setTextInput] = useState('');
   const [elapsed, setElapsed] = useState(0);
   const [interimText, setInterimText] = useState('');
+  const [bgAnalysisCount, setBgAnalysisCount] = useState(0);
   const timerRef = useRef(null);
+  const transcriptRef = useRef('');
 
+  // Keep ref in sync with transcript for chunked analysis
+  useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
+
+  // Timer + auto-stop at max duration
   useEffect(() => {
     if (isRecording) {
-      timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+      timerRef.current = setInterval(() => {
+        setElapsed((e) => {
+          const next = e + 1;
+          setBgAnalysisCount(getCallCount());
+          if (next >= MAX_RECORDING_SECONDS) {
+            handleStopAndSubmit();
+          }
+          return next;
+        });
+      }, 1000);
     } else {
       clearInterval(timerRef.current);
     }
@@ -43,52 +60,59 @@ export default function VoiceRecorder() {
     setElapsed(0);
     setTranscript('');
     setInterimText('');
+    setBgAnalysisCount(0);
+    transcriptRef.current = '';
+
     const started = startListening({
       onInterim: (text) => setInterimText(text),
       onFinal: (text) => {
         setTranscript(text);
         setInterimText(text);
+        transcriptRef.current = text;
       },
       onError: (err) => {
         console.error('Speech error:', err);
         setError(`Mic issue: ${err}. Try the text fallback.`);
       },
     });
-    if (started) setIsRecording(true);
+
+    if (started) {
+      setIsRecording(true);
+      // Start background chunked analysis
+      startChunkedAnalysis({
+        getTranscript: () => transcriptRef.current,
+        sourceText,
+        confidenceBefore,
+      });
+    }
   };
 
   const handleStopRecording = () => {
     stopListening();
     setIsRecording(false);
     setRecordingDuration(elapsed);
+    stopChunkedAnalysis();
   };
 
+  const handleStopAndSubmit = useCallback(() => {
+    stopListening();
+    setIsRecording(false);
+    setRecordingDuration(elapsed);
+    // Auto-submit after a brief moment for final transcript to settle
+    setTimeout(() => handleSubmit(), 300);
+  }, [elapsed]);
+
   const handleSubmit = async () => {
-    const finalTranscript = showTextFallback ? textInput.trim() : transcript.trim();
+    const finalTranscript = showTextFallback ? textInput.trim() : (transcriptRef.current || transcript).trim();
     if (!finalTranscript) return;
 
     setTranscript(finalTranscript);
-    setStep('analyzing');
-
-    try {
-      const result = await analyzeExplanation(sourceText, finalTranscript, confidenceBefore);
-      setAnalysis(result);
-      if (result.routing_decision) {
-        setRouting(
-          result.routing_decision.mode,
-          result.routing_decision.rationale,
-          result.routing_decision.plan || []
-        );
-      }
-      setStep('analysis');
-    } catch (err) {
-      console.error('Analysis failed:', err);
-      setError('Analysis failed. Please try again.');
-      setStep('recording');
-    }
+    stopChunkedAnalysis();
+    setStep('tutorial');
   };
 
   const hasContent = showTextFallback ? textInput.trim().length > 0 : transcript.trim().length > 0;
+  const remaining = MAX_RECORDING_SECONDS - elapsed;
 
   return (
     <div className="space-y-6">
@@ -97,19 +121,18 @@ export default function VoiceRecorder() {
           Explain: <span className="text-primary-600">{topic}</span>
         </h2>
         <p className="text-sm text-warm-500">
-          Talk through what you know. Be messy — that's the point.
+          Talk through what you know in under a minute. Be messy — that's the point.
         </p>
       </div>
 
       {!showTextFallback ? (
-        /* Voice recording UI */
         <div className="flex flex-col items-center gap-6 py-8">
           {/* Record button */}
           <button
             onClick={isRecording ? handleStopRecording : handleStartRecording}
             className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${
               isRecording
-                ? 'bg-red-500 hover:bg-red-600 animate-pulse-record shadow-lg shadow-red-500/30'
+                ? 'bg-red-500 hover:bg-red-600 animate-pulse-record'
                 : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-600/20'
             }`}
           >
@@ -120,19 +143,34 @@ export default function VoiceRecorder() {
             )}
           </button>
 
-          {/* Timer */}
-          <span className={`font-mono text-2xl ${isRecording ? 'text-red-500' : 'text-warm-400'}`}>
-            {formatTime(elapsed)}
-          </span>
+          {/* Timer with remaining time */}
+          <div className="text-center">
+            <span className={`font-mono text-2xl ${isRecording ? 'text-red-500' : 'text-warm-400'}`}>
+              {formatTime(elapsed)}
+            </span>
+            {isRecording && (
+              <p className={`text-xs mt-1 ${remaining <= 10 ? 'text-red-400' : 'text-warm-400'}`}>
+                {remaining}s remaining
+              </p>
+            )}
+          </div>
 
-          {/* Live transcript preview */}
+          {/* Background analysis indicator */}
+          {isRecording && bgAnalysisCount > 0 && (
+            <p className="text-xs text-primary-400 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Supervisor is already listening...
+            </p>
+          )}
+
+          {/* Live transcript */}
           {interimText && (
             <div className="w-full max-h-32 overflow-y-auto text-sm text-warm-500 bg-warm-100 rounded-xl p-4 leading-relaxed">
               {interimText}
             </div>
           )}
 
-          {/* Mic fallback link */}
+          {/* Mic fallback */}
           {!isRecording && (
             <button
               onClick={() => setShowTextFallback(true)}
@@ -143,7 +181,6 @@ export default function VoiceRecorder() {
           )}
         </div>
       ) : (
-        /* Text fallback */
         <div className="space-y-3">
           <textarea
             value={textInput}
@@ -162,7 +199,7 @@ export default function VoiceRecorder() {
         </div>
       )}
 
-      {/* Submit button (only when not recording and has content) */}
+      {/* Submit — only when stopped and has content */}
       {!isRecording && hasContent && (
         <button
           onClick={handleSubmit}

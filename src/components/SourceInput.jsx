@@ -32,28 +32,16 @@ export default function SourceInput() {
       setSourceText(`Source URL: ${urlInput.trim()}`);
       setStep('confidence');
     } else {
-      // Topic-only: Claude will search for sources
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await searchForSource(topic);
-        setSourceText(result.source_text);
-        setSourceWasAutoSearched(true);
-        setStep('confidence');
-      } catch (err) {
-        console.error('Source search failed:', err);
-        setError('Failed to find sources. You can proceed anyway — your supervisor will use general knowledge.');
-        // Allow proceeding without source
-        setSourceText('');
-        setStep('confidence');
-      } finally {
-        setIsLoading(false);
-      }
+      // Topic-only: skip source search, proceed immediately.
+      // The analysis step will use Claude's knowledge directly.
+      setSourceText('');
+      setSourceWasAutoSearched(true);
+      setStep('confidence');
     }
   };
 
   const modes = [
-    { key: 'topic', label: 'Just a topic', icon: Sparkles, desc: 'AI finds sources' },
+    { key: 'topic', label: 'Just a topic', icon: Sparkles, desc: 'AI uses its knowledge' },
     { key: 'url', label: 'URL', icon: Globe, desc: 'Article or docs' },
     { key: 'paste', label: 'Paste text', icon: FileText, desc: 'Notes or excerpt' },
   ];
