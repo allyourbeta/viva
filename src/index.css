@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+  --color-warm-50: #faf9f7;
+  --color-warm-100: #f5f3f0;
+  --color-warm-200: #e8e4de;
+  --color-warm-300: #d6d0c6;
+  --color-warm-500: #8c8377;
+  --color-warm-700: #5c554b;
+  --color-warm-900: #2c2924;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-warm-50);
+  color: var(--color-warm-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle page transition */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Recording pulse */
+@keyframes pulse-record {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.85; }
+}
+
+.animate-pulse-record {
+  animation: pulse-record 1.8s ease-in-out infinite;
+}
