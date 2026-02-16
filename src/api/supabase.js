@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Supabase is optional for initial development — functions gracefully degrade
 const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null;
@@ -17,9 +16,6 @@ function getDeviceId() {
   return id;
 }
 
-/**
- * Save a completed session to Supabase.
- */
 export async function saveSession(sessionData) {
   if (!supabase) {
     console.warn('Supabase not configured — session not saved');
@@ -62,9 +58,6 @@ export async function saveSession(sessionData) {
   return data;
 }
 
-/**
- * Load past sessions for the session history page.
- */
 export async function loadSessions() {
   if (!supabase) {
     console.warn('Supabase not configured — returning empty history');
@@ -86,9 +79,6 @@ export async function loadSessions() {
   return data || [];
 }
 
-/**
- * Load a single session by ID (for viewing past cards).
- */
 export async function loadSession(id) {
   if (!supabase) return null;
 

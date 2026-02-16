@@ -13,7 +13,14 @@ function TranscriptEntry({ role, text, thinking, isNew }) {
       {/* Tutor thinking note — appears BEFORE supervisor messages */}
       {thinking && isSupervisor && (
         <div className="tutor-note px-4 py-3 mb-3">
-          <div className="label-caps mb-1">{thinking.mode || 'Probing'}</div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="label-caps">{
+              thinking.mode === 'gap_fix' ? 'Fixing a gap'
+              : thinking.mode === 'level_up' ? 'Pushing deeper'
+              : thinking.mode === 'conflict_resolution' ? 'Resolving conflict'
+              : 'Probing your understanding'
+            }</div>
+          </div>
           <p className="text-sm text-[var(--ink-muted)] leading-relaxed">
             {thinking.key_weakness_targeted}
           </p>
@@ -162,10 +169,22 @@ export default function TutorialConversation() {
             <div className="label-caps">Topic</div>
             <div className="serif font-semibold text-lg mt-0.5">{topic}</div>
           </div>
-          <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--ink-muted)' }}>
-            <span>Exchange {roundCount}</span>
-            <span>·</span>
-            <span>{Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, '0')}</span>
+          <div className="flex items-center gap-4">
+            {/* Progress dots */}
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="w-2.5 h-2.5 rounded-full transition-colors"
+                  style={{
+                    background: n <= roundCount ? 'var(--indigo)' : 'var(--rule)',
+                    opacity: n <= roundCount ? 1 : 0.4,
+                  }} />
+              ))}
+            </div>
+            <div className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+              <span>Exchange {roundCount} of ~5</span>
+              <span className="mx-2">·</span>
+              <span>{Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, '0')}</span>
+            </div>
           </div>
         </div>
 

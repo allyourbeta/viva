@@ -6,46 +6,49 @@ import TutorialConversation from './TutorialConversation';
 import LearningCard from './LearningCard';
 import { ArrowLeft } from 'lucide-react';
 
-const STEP_LABELS = {
-  source: 'Topic',
-  confidence: 'Self-Assess',
-  recording: 'Explain',
-  tutorial: 'Tutorial',
-  card: 'Session Card',
-};
-
-const STEP_ORDER = ['source', 'confidence', 'recording', 'tutorial', 'card'];
+const STEPS = [
+  { key: 'source', label: 'Topic', desc: 'Choose what to explain' },
+  { key: 'confidence', label: 'Self-assess', desc: 'Rate your confidence' },
+  { key: 'recording', label: 'Explain', desc: 'Speak your understanding' },
+  { key: 'tutorial', label: 'Tutorial', desc: 'Your supervisor responds' },
+  { key: 'card', label: 'Report', desc: 'What you learned' },
+];
 
 export default function SessionWizard({ onComplete, onBack }) {
   const step = useSessionStore((s) => s.step);
-  const currentIdx = STEP_ORDER.indexOf(step);
+  const currentIdx = STEPS.findIndex((s) => s.key === step);
+  const isTutorial = step === 'tutorial';
+  const isCard = step === 'card';
 
   return (
     <div className="animate-fade-in">
-      {/* Progress + back */}
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={onBack}
-          className="text-warm-400 hover:text-warm-600 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1">
-          <div className="flex gap-1.5">
-            {STEP_ORDER.map((s) => (
-              <div
-                key={s}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  STEP_ORDER.indexOf(s) <= currentIdx ? 'bg-primary-500' : 'bg-warm-200'
-                }`}
-              />
-            ))}
+      {/* Progress bar — hide during tutorial and card (they have their own headers) */}
+      {!isTutorial && !isCard && (
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={onBack} style={{ color: 'var(--ink-muted)' }}
+            className="hover:opacity-70 transition-opacity">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1">
+            <div className="flex gap-1.5">
+              {STEPS.map((s, i) => (
+                <div key={s.key}
+                  className="h-1.5 flex-1 rounded-full transition-colors"
+                  style={{
+                    background: i <= currentIdx ? 'var(--indigo)' : 'var(--rule)',
+                    opacity: i <= currentIdx ? 1 : 0.3,
+                  }} />
+              ))}
+            </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="label-caps">{STEPS[currentIdx]?.label || step}</span>
+              <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                — {STEPS[currentIdx]?.desc}
+              </span>
+            </div>
           </div>
-          <p className="text-xs text-warm-400 mt-1.5">
-            {STEP_LABELS[step] || step}
-          </p>
         </div>
-      </div>
+      )}
 
       {/* Step content */}
       {step === 'source' && <SourceInput />}

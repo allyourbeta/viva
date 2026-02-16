@@ -175,6 +175,17 @@ describe('Layout (scholarly header)', () => {
     expect(screen.getByText('Live Tutorial')).toBeInTheDocument();
   });
 
+  it('shows "Session Report" when on card', () => {
+    mockStoreState = createMockStore({ step: 'card' });
+    render(<Layout><div>child</div></Layout>);
+    expect(screen.getByText('Session Report')).toBeInTheDocument();
+  });
+
+  it('header shows tagline', () => {
+    render(<Layout><div>child</div></Layout>);
+    expect(screen.getByText('Explain it. Defend it. Know it.')).toBeInTheDocument();
+  });
+
   it('header uses label-caps class for the brand label', () => {
     render(<Layout><div>child</div></Layout>);
     const viva = screen.getByText('Viva');
@@ -241,10 +252,11 @@ describe('SessionHistory (scholarly home screen)', () => {
     expect(rightPanel.className).toContain('col-span-12');
   });
 
-  it('left panel is a paper-card', () => {
+  it('left panel contains paper-card elements', () => {
     const { container } = render(<SessionHistory onNewSession={onNewSession} />);
-    const sections = container.querySelectorAll('section');
-    expect(sections[0].className).toContain('paper-card');
+    const leftSection = container.querySelectorAll('section')[0];
+    const cards = leftSection.querySelectorAll('.paper-card');
+    expect(cards.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows "New tutorial" label-caps', () => {
@@ -275,9 +287,10 @@ describe('SessionHistory (scholarly home screen)', () => {
     expect(screen.getByText('Start viva')).toBeInTheDocument();
   });
 
-  it('shows "How it works" section', () => {
+  it('shows "How this works" section for first-time users', () => {
+    mockStoreState = createMockStore({ sessions: [] });
     render(<SessionHistory onNewSession={onNewSession} />);
-    expect(screen.getByText('How it works')).toBeInTheDocument();
+    expect(screen.getByText('How this works')).toBeInTheDocument();
     expect(screen.getByText(/viva voce/)).toBeInTheDocument();
   });
 
@@ -294,7 +307,9 @@ describe('SessionHistory (scholarly home screen)', () => {
 
   it('history section uses paper-card with divide-y', () => {
     const { container } = render(<SessionHistory onNewSession={onNewSession} />);
-    const historyCard = container.querySelectorAll('.paper-card')[1]; // second paper-card
+    // The right panel's paper-card should have divide-y for session entries
+    const rightSection = container.querySelectorAll('section')[1];
+    const historyCard = rightSection.querySelector('.paper-card');
     expect(historyCard).toBeTruthy();
     expect(historyCard.className).toContain('divide-y');
   });
@@ -313,10 +328,11 @@ describe('SessionHistory (scholarly home screen)', () => {
     expect(screen.getByText('Probing')).toBeInTheDocument();
   });
 
-  it('renders confidence deltas', () => {
+  it('renders confidence deltas as chips', () => {
     render(<SessionHistory onNewSession={onNewSession} />);
-    // Should show "Confidence 4 → 7" for CAP Theorem
-    expect(screen.getByText(/Confidence 4 → 7/)).toBeInTheDocument();
+    // Chips show +3 for CAP Theorem (4→7) and -2 for React useEffect (8→6)
+    expect(screen.getByText('+3')).toBeInTheDocument();
+    expect(screen.getByText('-2')).toBeInTheDocument();
   });
 
   it('renders "Remember:" one-liner for sessions', () => {
@@ -324,9 +340,9 @@ describe('SessionHistory (scholarly home screen)', () => {
     expect(screen.getByText(/Network partitions are inevitable/)).toBeInTheDocument();
   });
 
-  it('"Remember" text uses serif italic', () => {
+  it('"Remember" text uses serif italic in an amber card', () => {
     render(<SessionHistory onNewSession={onNewSession} />);
-    const remember = screen.getByText('Network partitions are inevitable');
+    const remember = screen.getByText(/Network partitions are inevitable/);
     expect(remember.className).toContain('serif');
     expect(remember.className).toContain('italic');
   });
@@ -510,9 +526,9 @@ describe('LearningCard (scholarly report)', () => {
     expect(quote.className).toContain('serif');
   });
 
-  it('shows meta-learning insight', () => {
+  it('shows meta-learning insight as "How you think"', () => {
     render(<LearningCard onDone={onDone} />);
-    expect(screen.getByText('Meta-learning insight')).toBeInTheDocument();
+    expect(screen.getByText('How you think')).toBeInTheDocument();
     expect(screen.getByText(/Strong on intuition/)).toBeInTheDocument();
   });
 
@@ -531,9 +547,9 @@ describe('LearningCard (scholarly report)', () => {
     expect(screen.getByText('vanishing gradients')).toBeInTheDocument();
   });
 
-  it('shows next session seed', () => {
+  it('shows next session seed as "Your next challenge"', () => {
     render(<LearningCard onDone={onDone} />);
-    expect(screen.getByText('Next session seed')).toBeInTheDocument();
+    expect(screen.getByText('Your next challenge')).toBeInTheDocument();
     expect(screen.getByText(/vanishing gradients using sigmoid/)).toBeInTheDocument();
   });
 

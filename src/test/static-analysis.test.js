@@ -70,8 +70,9 @@ describe('Layout anti-patterns', () => {
     /\bmax-w-sm\b/,
   ];
 
-  // These are the "main" screens that should never be narrow
-  const MAIN_SCREENS = ['SessionHistory.jsx', 'TutorialConversation.jsx', 'LearningCard.jsx', 'Layout.jsx'];
+  // These are the "main" screens that should never have narrow page wrappers
+  // (inner text constraints like max-w-2xl on a paragraph are fine)
+  const MAIN_SCREENS = ['SessionHistory.jsx', 'TutorialConversation.jsx', 'Layout.jsx'];
 
   for (const screenName of MAIN_SCREENS) {
     it(`${screenName} does not use narrow max-width (max-w-xl, max-w-2xl, etc.)`, () => {

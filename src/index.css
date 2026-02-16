@@ -30,14 +30,33 @@
   --color-amber-bg: #FBF0D6;
   --color-oxblood-bg: #fde8ec;
   --color-indigo-bg: #edf2ff;
+
+  /* Legacy warm-* palette (maps to scholarly ink/paper tones) */
+  --color-warm-50: #fdfaf5;
+  --color-warm-100: #f5f0e8;
+  --color-warm-200: #e0d2be;
+  --color-warm-300: #b39a74;
+  --color-warm-400: #7a6a52;
+  --color-warm-500: #7a6a52;
+  --color-warm-600: #5a4d3a;
+  --color-warm-700: #3d3528;
+  --color-warm-800: #2b2114;
+  --color-warm-900: #2b2114;
+
+  /* Legacy primary-* palette (maps to indigo accent) */
+  --color-primary-50: #edf2ff;
+  --color-primary-100: #dbe4ff;
+  --color-primary-200: #bac8ff;
+  --color-primary-300: #91a7ff;
+  --color-primary-400: #5c7cfa;
+  --color-primary-500: #2D3A8C;
+  --color-primary-600: #2D3A8C;
+  --color-primary-700: #232e6e;
+  --color-primary-800: #1a2252;
+  --color-primary-900: #111636;
 }
 
 @layer base {
-  @font-face {
-    font-family: 'Source Serif 4';
-    src: url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap');
-  }
-
   /* Raw CSS custom properties for use in inline styles (style={{}}) */
   :root {
     --paper: #F7F1E3;

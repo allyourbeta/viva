@@ -110,7 +110,7 @@ describe('Component Smoke Tests', () => {
 
   it('ConfidenceSlider renders', () => {
     render(<ConfidenceSlider />);
-    expect(screen.getByText('Before you explain...')).toBeInTheDocument();
+    expect(screen.getByText('How well do you know this?')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Start Explaining/ })).toBeInTheDocument();
   });

@@ -13,44 +13,56 @@ export default function ConfidenceSlider() {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-serif font-bold text-warm-900 mb-1">
-          Before you explain...
-        </h2>
-        <p className="text-sm text-warm-500">
-          How confident are you that you can explain <strong className="text-warm-700">{topic}</strong> clearly?
-          Be honest — your supervisor will compare this to your actual performance.
-        </p>
-      </div>
+    <div className="max-w-lg mx-auto">
+      <div className="paper-card p-8 text-center space-y-8">
+        <div>
+          <div className="label-caps mb-2">Before you begin</div>
+          <h2 className="serif text-2xl font-semibold tracking-tight">
+            How well do you know this?
+          </h2>
+          <p className="text-sm mt-2" style={{ color: 'var(--ink-muted)' }}>
+            Rate your confidence in explaining
+            <strong className="font-medium" style={{ color: 'var(--ink)' }}> {topic}</strong>.
+            Be honest — your supervisor will compare this to your actual performance.
+          </p>
+        </div>
 
-      <div className="text-center py-8">
-        <div className="text-6xl font-serif font-bold text-primary-600 mb-2">
-          {confidence}
+        <div className="py-4">
+          <div className="serif text-6xl font-bold" style={{ color: 'var(--indigo)' }}>
+            {confidence}
+          </div>
+          <div className="text-sm mt-2 font-medium" style={{ color: 'var(--ink-muted)' }}>
+            {labels[confidence]}
+          </div>
+          <div className="mt-8 px-4">
+            <input
+              type="range" min={1} max={10}
+              value={confidence}
+              onChange={(e) => setConfidence(Number(e.target.value))}
+              className="w-full accent-[var(--indigo)]"
+              style={{ accentColor: 'var(--indigo)' }}
+            />
+            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--ink-faint)' }}>
+              <span>No idea</span>
+              <span>Expert</span>
+            </div>
+          </div>
         </div>
-        <div className="text-sm text-warm-500 mb-8">
-          {labels[confidence]}
-        </div>
-        <input
-          type="range"
-          min={1}
-          max={10}
-          value={confidence}
-          onChange={(e) => setConfidence(Number(e.target.value))}
-          className="w-full max-w-xs accent-primary-600"
-        />
-        <div className="flex justify-between text-xs text-warm-400 max-w-xs mx-auto mt-1">
-          <span>No idea</span>
-          <span>Expert</span>
-        </div>
-      </div>
 
-      <button
-        onClick={() => setStep('recording')}
-        className="w-full py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-colors"
-      >
-        Start Explaining →
-      </button>
+        <div className="rounded-xl p-3" style={{ background: 'var(--amber-bg)', border: '1px solid var(--rule-light)' }}>
+          <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+            After the tutorial, your supervisor will re-assess this.
+            A drop in confidence is a good sign — it means you discovered what you didn't know.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setStep('recording')}
+          className="w-full py-3 rounded-xl text-white font-medium transition-colors"
+          style={{ background: 'var(--indigo)' }}>
+          Start Explaining →
+        </button>
+      </div>
     </div>
   );
 }
