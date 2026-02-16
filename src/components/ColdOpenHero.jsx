@@ -52,8 +52,8 @@ export default function ColdOpenHero({ topicInput, setTopicInput, onStart }) {
 
         {/* Sub */}
         <p className="cold-open-sub">
-          Speak what you know. An AI supervisor finds the gaps.<br />
-          Not a chatbot — a viva voce examination.
+          Speak what you know. An AI examiner finds the gaps.<br />
+          Learn the way Turing did — by defending your ideas out loud.
         </p>
 
         {/* Input + CTA */}

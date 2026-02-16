@@ -1,9 +1,9 @@
 import useSessionStore from '../store/sessionStore';
 
 const SUBTITLES = {
-  source: 'Defense Ledger',
-  confidence: 'Defense Ledger',
-  recording: 'Defense Ledger',
+  source: 'Learn Under Pressure',
+  confidence: 'Learn Under Pressure',
+  recording: 'Learn Under Pressure',
   tutorial: 'Live Examination',
   card: 'Session Report',
 };
@@ -38,7 +38,7 @@ export default function Layout({ children }) {
           </div>
         </div>
         <div className="text-xs font-medium tracking-wide" style={{ color: 'var(--ink-faint)' }}>
-          Defend what you claim to know.
+          Learn the way Turing did.
         </div>
       </header>
       <main className={isSession ? 'px-6 py-4' : 'mx-auto max-w-6xl px-8 py-6'}>
