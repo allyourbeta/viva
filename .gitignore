@@ -29,3 +29,6 @@ dist-ssr
 __pycache__/
 venv/
 *.zip
+
+*storybook.log
+storybook-static

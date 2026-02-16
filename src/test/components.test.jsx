@@ -122,8 +122,8 @@ describe('Component Smoke Tests', () => {
     expect(screen.getByText(/mic issues/)).toBeInTheDocument();
   });
 
-  it('SessionHistory renders empty state with demo sessions', () => {
+  it('SessionHistory renders scholarly home screen', () => {
     render(<SessionHistory onNewSession={vi.fn()} />);
-    expect(screen.getByText('Your Tutorial Sessions')).toBeInTheDocument();
+    expect(screen.getByText('What will you explain today?')).toBeInTheDocument();
   });
 });

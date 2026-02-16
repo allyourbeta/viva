@@ -1,169 +1,156 @@
-import { CheckCircle, AlertTriangle, Lightbulb, ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
 import { saveSession } from '../api/supabase';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function LearningCard({ onDone }) {
   const topic = useSessionStore((s) => s.topic);
   const confidenceBefore = useSessionStore((s) => s.confidenceBefore);
   const learningCard = useSessionStore((s) => s.learningCard);
-  const analysis = useSessionStore((s) => s.analysis);
   const routingMode = useSessionStore((s) => s.routingMode);
   const routingRationale = useSessionStore((s) => s.routingRationale);
   const routingPlan = useSessionStore((s) => s.routingPlan);
-  const questions = useSessionStore((s) => s.questions);
-  const answers = useSessionStore((s) => s.answers);
   const transcript = useSessionStore((s) => s.transcript);
   const sourceUrl = useSessionStore((s) => s.sourceUrl);
   const sourceText = useSessionStore((s) => s.sourceText);
   const sourceWasAutoSearched = useSessionStore((s) => s.sourceWasAutoSearched);
   const recordingDuration = useSessionStore((s) => s.recordingDuration);
   const addSession = useSessionStore((s) => s.addSession);
+  const analysis = useSessionStore((s) => s.analysis);
+  const questions = useSessionStore((s) => s.questions);
 
   const [saved, setSaved] = useState(false);
-  const savingRef = useRef(false);
 
   useEffect(() => {
-    if (saved || savingRef.current) return;
-    savingRef.current = true;
-    const doSave = async () => {
+    if (saved) return;
+    const go = async () => {
       try {
         const session = await saveSession({
-          topic,
-          sourceUrl,
-          sourceText,
-          sourceWasAutoSearched,
-          confidenceBefore,
-          transcript,
-          recordingDuration,
-          analysis,
-          routingMode,
-          routingRationale,
-          routingPlan,
-          questions,
-          learningCard,
-          sourcesUsed: null,
+          topic, sourceUrl, sourceText, sourceWasAutoSearched, confidenceBefore,
+          transcript, recordingDuration, analysis, routingMode, routingRationale,
+          routingPlan, questions, learningCard, sourcesUsed: null,
         });
         addSession(session);
         setSaved(true);
-      } catch (err) {
-        console.error('Failed to save session:', err);
-        setSaved(true); // Don't block the UI
-      }
+      } catch (err) { console.error('Save failed:', err); setSaved(true); }
     };
-    doSave();
+    go();
   }, []);
 
   const card = learningCard || {};
-  const confidenceAfter = card.confidence_after || '?';
-  const diff = typeof confidenceAfter === 'number' ? confidenceAfter - confidenceBefore : null;
+  const after = card.confidence_after;
+  const delta = typeof after === 'number' ? after - confidenceBefore : null;
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-          <BookOpen className="w-6 h-6 text-emerald-600" />
-        </div>
-        <h2 className="text-xl font-serif font-bold text-warm-900">Session Complete</h2>
-        <p className="text-sm text-warm-500 mt-1">{topic}</p>
-      </div>
-
-      {/* Confidence before → after */}
-      <div className="bg-white rounded-xl border border-warm-200 p-4 text-center">
-        <p className="text-xs text-warm-400 uppercase tracking-wide font-semibold mb-1">Confidence</p>
-        <p className="text-2xl font-serif font-bold">
-          <span className="text-warm-400">{confidenceBefore}</span>
-          <span className="text-warm-300 mx-2">→</span>
-          <span className={diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-amber-600' : 'text-warm-700'}>
-            {confidenceAfter}
-          </span>
-        </p>
-        {diff !== null && diff !== 0 && (
-          <p className={`text-xs mt-1 ${diff > 0 ? 'text-emerald-500' : 'text-amber-500'}`}>
-            {diff > 0 ? `+${diff} improvement` : `${diff} — honest recalibration`}
-          </p>
-        )}
-      </div>
-
-      {/* Mastered */}
-      {card.concepts_mastered?.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-sm font-semibold text-warm-700">Mastered</h3>
-          </div>
-          <div className="flex flex-wrap gap-2 ml-6">
-            {card.concepts_mastered.map((c, i) => (
-              <span key={i} className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-100">
-                {c}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Remaining gaps */}
-      {card.remaining_gaps?.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-semibold text-warm-700">Still Working On</h3>
-          </div>
-          <div className="flex flex-wrap gap-2 ml-6">
-            {card.remaining_gaps.map((g, i) => (
-              <span key={i} className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-100">
-                {g}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Key correction */}
-      {card.key_correction && (
-        <div className="bg-red-50 rounded-xl p-4 border border-red-100">
-          <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">Key Correction</p>
-          <p className="text-sm text-red-800 leading-relaxed">{card.key_correction}</p>
-        </div>
-      )}
-
-      {/* One thing to remember */}
-      {card.one_thing_to_remember && (
-        <div className="bg-primary-50 rounded-xl p-4 border border-primary-100">
-          <div className="flex items-start gap-2">
-            <Lightbulb className="w-4 h-4 text-primary-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-1">Remember This</p>
-              <p className="text-sm text-primary-900 leading-relaxed font-medium">{card.one_thing_to_remember}</p>
+    <div className="max-w-4xl mx-auto animate-fade-in">
+      <div className="paper-card p-8">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <div className="label-caps">Tutorial report</div>
+            <h1 className="mt-1 serif text-3xl font-semibold tracking-tight">{topic}</h1>
+            <div className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+              {routingMode && `Mode: ${routingMode.replace('_', ' ')} · `}
+              {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </div>
           </div>
         </div>
-      )}
 
-      {/* Meta learning insight */}
-      {card.meta_learning_insight && (
-        <p className="text-sm text-warm-500 italic leading-relaxed">
-          🧠 {card.meta_learning_insight}
-        </p>
-      )}
-
-      {/* Next session seed */}
-      {card.next_session_seed && (
-        <div className="bg-warm-100 rounded-xl p-4">
-          <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-1">Next Session</p>
-          <p className="text-sm text-warm-700 leading-relaxed">{card.next_session_seed}</p>
+        {/* Confidence reveal band */}
+        <div className="rounded-2xl overflow-hidden mb-8" style={{ border: '1px solid var(--rule)' }}>
+          <div className="grid grid-cols-3" style={{ background: 'var(--white-glass)' }}>
+            <div className="p-6 border-r" style={{ borderColor: 'var(--rule)' }}>
+              <div className="label-caps">Before</div>
+              <div className="mt-2 serif text-4xl" style={{ color: 'var(--oxblood)' }}>{confidenceBefore}</div>
+            </div>
+            <div className="p-6 border-r" style={{ borderColor: 'var(--rule)' }}>
+              <div className="label-caps">After</div>
+              <div className="mt-2 serif text-4xl font-semibold" style={{ color: 'var(--sage)' }}>{after ?? '?'}</div>
+            </div>
+            <div className="p-6">
+              <div className="label-caps">Delta</div>
+              <div className="mt-2 serif text-4xl" style={{ color: delta > 0 ? 'var(--sage)' : delta < 0 ? 'var(--oxblood)' : 'var(--ink-muted)' }}>
+                {delta != null ? (delta > 0 ? `+${delta}` : delta) : '—'}
+              </div>
+            </div>
+          </div>
+          {delta != null && (
+            <div className="px-6 py-3 text-sm border-t" style={{ background: 'var(--amber-bg)', borderColor: 'var(--rule)', color: 'var(--ink-muted)' }}>
+              {delta > 0 ? 'Your understanding deepened through the tutorial.' : delta < 0 ? 'Honest recalibration — you know more about what you don\'t know.' : 'Confidence held steady.'}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Actions */}
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={onDone}
-          className="flex-1 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-colors flex items-center justify-center gap-2"
-        >
-          <ArrowRight className="w-4 h-4" /> Back to Sessions
-        </button>
+        {/* Two-column content */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Left: corrections & insights */}
+          <div className="md:col-span-7 space-y-4">
+            {card.key_correction && (
+              <div className="rounded-2xl p-5" style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
+                <div className="label-caps mb-2">Key correction</div>
+                <p className="text-sm leading-relaxed">{card.key_correction}</p>
+              </div>
+            )}
+            {card.one_thing_to_remember && (
+              <div className="rounded-2xl p-5" style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
+                <div className="label-caps mb-2">One thing to remember</div>
+                <p className="serif text-xl tracking-tight" style={{ color: 'var(--indigo)' }}>
+                  "{card.one_thing_to_remember}"
+                </p>
+              </div>
+            )}
+            {card.meta_learning_insight && (
+              <div className="rounded-2xl p-5" style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
+                <div className="label-caps mb-2">Meta-learning insight</div>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-muted)' }}>{card.meta_learning_insight}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Right: concepts & next */}
+          <div className="md:col-span-5 space-y-4">
+            {card.concepts_mastered?.length > 0 && (
+              <div className="rounded-2xl p-5 pill-mastered" style={{ border: '1px solid var(--rule)' }}>
+                <div className="label-caps mb-2" style={{ color: 'var(--sage)' }}>Mastered</div>
+                <ul className="space-y-1.5 text-sm">
+                  {card.concepts_mastered.map((c, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" /> {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {card.remaining_gaps?.length > 0 && (
+              <div className="rounded-2xl p-5 pill-probing" style={{ border: '1px solid var(--rule)' }}>
+                <div className="label-caps mb-2" style={{ color: 'var(--amber-accent)' }}>Remaining gaps</div>
+                <ul className="space-y-1.5 text-sm">
+                  {card.remaining_gaps.map((g, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" /> {g}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {card.next_session_seed && (
+              <div className="rounded-2xl border border-dashed p-4" style={{ borderColor: 'var(--rule)', background: 'var(--panel)' }}>
+                <div className="label-caps mb-1">Next session seed</div>
+                <p className="serif text-sm font-medium">{card.next_session_seed}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 pt-6 border-t flex items-center justify-between" style={{ borderColor: 'var(--rule)' }}>
+          <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>Saved to your tutorial history.</span>
+          <button onClick={onDone}
+            className="rounded-xl px-6 py-3 text-sm font-medium text-white flex items-center gap-2"
+            style={{ background: 'var(--indigo)' }}>
+            Back to ledger <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
