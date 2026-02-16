@@ -28,7 +28,7 @@ function extractJSON(response) {
 /**
  * Opening move — supervisor's first response after hearing the explanation.
  */
-export async function getOpeningResponse(sourceText, transcript, confidenceBefore) {
+export async function getOpeningResponse(sourceText, transcript, confidenceBefore, topic) {
   console.log('[Viva Tutorial] Opening move...');
   const start = Date.now();
   emit('api_call', { endpoint: 'opening', model: MODEL });
@@ -37,7 +37,7 @@ export async function getOpeningResponse(sourceText, transcript, confidenceBefor
     model: MODEL,
     max_tokens: 1024,
     system: TUTORIAL_SYSTEM_PROMPT,
-    messages: buildOpeningMessages(sourceText, transcript, confidenceBefore),
+    messages: buildOpeningMessages(sourceText, transcript, confidenceBefore, topic),
   });
 
   const ms = Date.now() - start;
@@ -54,15 +54,16 @@ export async function getOpeningResponse(sourceText, transcript, confidenceBefor
  * Follow-up — supervisor responds to the student's answer.
  * Sends full conversation history for context continuity.
  */
-export async function getFollowUpResponse(conversationHistory, sourceText) {
+export async function getFollowUpResponse(conversationHistory, sourceText, topic) {
   console.log(`[Viva Tutorial] Follow-up (${conversationHistory.length} messages)...`);
   const start = Date.now();
   emit('api_call', { endpoint: 'followup', model: MODEL, messageCount: conversationHistory.length });
 
+  const topicLine = topic ? `\n## Topic: ${topic}` : '';
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 1024,
-    system: FOLLOWUP_SYSTEM_PROMPT + `\n\n## Source Material\n${sourceText || '(Use your own knowledge.)'}`,
+    system: FOLLOWUP_SYSTEM_PROMPT + topicLine + `\n\n## Source Material\n${sourceText || '(Use your own knowledge.)'}`,
     messages: conversationHistory,
   });
 
@@ -80,15 +81,16 @@ export async function getFollowUpResponse(conversationHistory, sourceText) {
  * Closing move — supervisor's final remark before the session ends.
  * No question asked — just a brief observation and encouragement.
  */
-export async function getClosingResponse(conversationHistory, sourceText) {
+export async function getClosingResponse(conversationHistory, sourceText, topic) {
   console.log('[Viva Tutorial] Closing move...');
   const start = Date.now();
   emit('api_call', { endpoint: 'closing', model: MODEL });
 
+  const topicLine = topic ? `\n## Topic: ${topic}` : '';
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 512,
-    system: CLOSING_SYSTEM_PROMPT + `\n\n## Source Material\n${sourceText || '(Use your own knowledge.)'}`,
+    system: CLOSING_SYSTEM_PROMPT + topicLine + `\n\n## Source Material\n${sourceText || '(Use your own knowledge.)'}`,
     messages: conversationHistory,
   });
 

@@ -35,6 +35,8 @@ export default function TutorialConversation() {
   const responseTimerRef = useRef(null);
   const scrollRef = useRef(null);
   const answerRef = useRef('');
+  const apiHistoryRef = useRef([]);
+  const roundCountRef = useRef(0);
 
   useEffect(() => {
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -76,17 +78,20 @@ export default function TutorialConversation() {
     let cancelled = false;
     async function go() {
       try {
-        const result = await getOpeningResponse(sourceText, transcript, confidenceBefore);
+        const result = await getOpeningResponse(sourceText, transcript, confidenceBefore, topic);
         if (cancelled) return;
         const a = result.internal_assessment;
         if (a) setRouting(a.mode || 'socratic_probe', a.key_weakness_targeted || '', []);
-        setApiHistory([
+        const initialHistory = [
           { role: 'user', content: `Student's explanation:\n${transcript}` },
           { role: 'assistant', content: result.response },
-        ]);
+        ];
+        setApiHistory(initialHistory);
+        apiHistoryRef.current = initialHistory;
         setIsLoading(false);
         addSupervisorResponse(result.response, a, null);
         setRoundCount(1);
+        roundCountRef.current = 1;
       } catch (err) {
         console.error('Opening failed:', err);
         if (!cancelled) {
@@ -103,11 +108,12 @@ export default function TutorialConversation() {
     setCurrentAnswer('');
     answerRef.current = '';
     setResponseElapsed(0);
-    // Start background pre-calling while user speaks
-    const isFinal = roundCount >= MIN_ROUNDS;
+    const history = apiHistoryRef.current;
+    const round = roundCountRef.current;
+    const isFinal = round >= MIN_ROUNDS;
     const bgApiFn = isFinal
-      ? (partial) => getClosingResponse([...apiHistory, { role: 'user', content: partial }], sourceText)
-      : (partial) => getFollowUpResponse([...apiHistory, { role: 'user', content: partial }], sourceText);
+      ? (partial) => getClosingResponse([...history, { role: "user", content: partial }], sourceText, topic)
+      : (partial) => getFollowUpResponse([...history, { role: 'user', content: partial }], sourceText, topic);
     const ok = startListening({
       onInterim: (t) => { setCurrentAnswer(t); answerRef.current = t; },
       onFinal: (t) => { setCurrentAnswer(t); answerRef.current = t; },
@@ -125,39 +131,42 @@ export default function TutorialConversation() {
     }
   };
 
-  const handleStopRecording = () => {
+  const handleStopRecording = useCallback(() => {
     stopListening();
     setIsRecording(false);
     clearInterval(responseTimerRef.current);
     stopChunkedAnalysis();
     setTimeout(() => {
-      const answer = (answerRef.current || currentAnswer).trim();
+      const answer = (answerRef.current).trim();
       if (answer) handleSubmitAnswer(answer);
     }, 500);
-  };
+  }, []);
 
   const handleSubmitAnswer = async (answer) => {
     if (!answer) return;
     setDisplayItems((prev) => [...prev, { type: 'message', role: 'student', text: answer }]);
     setCurrentAnswer('');
     setIsLoading(true);
-    const newHistory = [...apiHistory, { role: 'user', content: answer }];
-    const isFinalRound = roundCount >= MIN_ROUNDS;
+    const history = apiHistoryRef.current;
+    const round = roundCountRef.current;
+    const newHistory = [...history, { role: 'user', content: answer }];
+    const isFinalRound = round >= MIN_ROUNDS;
 
     try {
-      // Use cached background result if available, else fire fresh call
       const freshFn = isFinalRound
-        ? (finalAnswer) => getClosingResponse([...apiHistory, { role: 'user', content: finalAnswer }], sourceText)
-        : (finalAnswer) => getFollowUpResponse([...apiHistory, { role: 'user', content: finalAnswer }], sourceText);
+        ? (finalAnswer) => getClosingResponse([...history, { role: 'user', content: finalAnswer }], sourceText, topic)
+        : (finalAnswer) => getFollowUpResponse([...history, { role: 'user', content: finalAnswer }], sourceText, topic);
 
       const result = await finishAnalysis({ freshFn, finalTranscript: answer });
       const updatedHistory = [...newHistory, { role: 'assistant', content: result.response }];
       setApiHistory(updatedHistory);
-      setRoundCount((r) => r + 1);
+      apiHistoryRef.current = updatedHistory;
+      setRoundCount((r) => { roundCountRef.current = r + 1; return r + 1; });
       setIsLoading(false);
       addSupervisorResponse(result.response, result.internal_assessment || null, currentMode);
 
-      if (isFinalRound || (roundCount >= MIN_ROUNDS - 1 && !result.should_continue)) {
+      const newRound = round + 1;
+      if (isFinalRound || (newRound >= MIN_ROUNDS && !result.should_continue)) {
         setTimeout(() => handleFinish(updatedHistory), 3000);
       }
     } catch (err) {

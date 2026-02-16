@@ -37,12 +37,13 @@ Respond with ONLY a JSON object (no markdown fences):
   }
 }`;
 
-export function buildOpeningMessages(sourceText, transcript, confidenceBefore) {
+export function buildOpeningMessages(sourceText, transcript, confidenceBefore, topic) {
   return [
     {
       role: 'user',
       content: `## TOPIC (all questions must stay on this topic)
-${sourceText || '(No source — use your own knowledge.)'}
+Topic: ${topic || '(not specified)'}
+Source material: ${sourceText || '(No source — use your own knowledge on the topic above.)'}
 
 ## Student's Spoken Explanation
 ${transcript}
