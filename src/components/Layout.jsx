@@ -15,17 +15,26 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen">
-      <header className="flex items-center justify-between px-8 py-4 border-b"
+      <header className="flex items-center justify-between px-8 py-3 border-b"
         style={{ borderColor: 'var(--rule)' }}>
-        <div className="flex items-baseline gap-3">
+        <div className="flex items-center gap-4">
+          {/* Logo mark */}
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm font-bold tracking-tight"
+            style={{ background: 'var(--gradient-indigo)' }}>
+            V
+          </div>
           <div>
-            <div className="label-caps">Viva</div>
-            <span className="serif text-lg font-semibold tracking-tight">
-              {subtitle}
-            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="label-caps" style={{ color: 'var(--ink)' }}>
+                Viva
+              </span>
+              <span className="serif text-lg font-semibold tracking-tight">
+                {subtitle}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+        <div className="text-xs font-medium tracking-wide" style={{ color: 'var(--ink-faint)' }}>
           Explain it. Defend it. Know it.
         </div>
       </header>

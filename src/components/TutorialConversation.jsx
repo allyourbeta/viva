@@ -1,37 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, Square, ArrowRight } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
-import { getOpeningResponse, getFollowUpResponse, wrapUpTutorial } from '../api/tutorial';
+import { getOpeningResponse, getFollowUpResponse, getClosingResponse, wrapUpTutorial } from '../api/tutorial';
 import { startListening, stopListening, speak } from '../services/speechService';
+import { startChunkedAnalysis, stopChunkedAnalysis, finishAnalysis } from '../services/chunkedAnalysis';
 import SessionDashboard from './SessionDashboard';
+import TranscriptEntry from './TranscriptEntry';
 
-/* ── Transcript-style message (NOT a chat bubble) ── */
-function TranscriptEntry({ role, text, thinking }) {
-  const isSupervisor = role === 'supervisor';
-  return (
-    <div className="animate-fade-in">
-      {thinking && isSupervisor && (
-        <div className="tutor-note px-4 py-3 mb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="label-caps">{
-              thinking.mode === 'gap_fix' ? 'Fixing a gap'
-              : thinking.mode === 'level_up' ? 'Pushing deeper'
-              : thinking.mode === 'conflict_resolution' ? 'Resolving conflict'
-              : 'Probing your understanding'
-            }</div>
-          </div>
-          <p className="text-sm text-[var(--ink-muted)] leading-relaxed">{thinking.key_weakness_targeted}</p>
-        </div>
-      )}
-      <div className="grid grid-cols-[100px_1fr] gap-4">
-        <div className="label-caps pt-1.5">{isSupervisor ? 'Supervisor' : 'Student'}</div>
-        <div className={isSupervisor ? 'supervisor-block p-4' : 'student-block p-4'}>
-          <p className={`leading-relaxed ${isSupervisor ? 'serif text-base' : 'text-sm'}`}>{text}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+// TranscriptEntry uses: supervisor-block, student-block, tutor-note, 'Supervisor', 'Student'
+
+const MAX_RESPONSE_SECONDS = 60;
+const MIN_ROUNDS = 2; // Minimum exchanges before closing (bump to 4-5 for production)
 
 export default function TutorialConversation() {
   const topic = useSessionStore((s) => s.topic);
@@ -52,6 +31,8 @@ export default function TutorialConversation() {
   const [currentMode, setCurrentMode] = useState('socratic_probe');
   const [isFinishing, setIsFinishing] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [responseElapsed, setResponseElapsed] = useState(0);
+  const responseTimerRef = useRef(null);
   const scrollRef = useRef(null);
   const answerRef = useRef('');
 
@@ -60,7 +41,7 @@ export default function TutorialConversation() {
     return () => clearInterval(t);
   }, []);
 
-  // R key shortcut for record/stop/submit
+  // R key shortcut
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === 'r' || e.key === 'R') {
@@ -121,23 +102,37 @@ export default function TutorialConversation() {
   const handleStartRecording = () => {
     setCurrentAnswer('');
     answerRef.current = '';
+    setResponseElapsed(0);
+    // Start background pre-calling while user speaks
+    const isFinal = roundCount >= MIN_ROUNDS;
+    const bgApiFn = isFinal
+      ? (partial) => getClosingResponse([...apiHistory, { role: 'user', content: partial }], sourceText)
+      : (partial) => getFollowUpResponse([...apiHistory, { role: 'user', content: partial }], sourceText);
     const ok = startListening({
       onInterim: (t) => { setCurrentAnswer(t); answerRef.current = t; },
       onFinal: (t) => { setCurrentAnswer(t); answerRef.current = t; },
       onError: () => {},
     });
-    if (ok) setIsRecording(true);
+    if (ok) {
+      setIsRecording(true);
+      startChunkedAnalysis({ apiFn: bgApiFn, getTranscript: () => answerRef.current });
+      responseTimerRef.current = setInterval(() => {
+        setResponseElapsed((e) => {
+          if (e + 1 >= MAX_RESPONSE_SECONDS) handleStopRecording();
+          return e + 1;
+        });
+      }, 1000);
+    }
   };
 
   const handleStopRecording = () => {
     stopListening();
     setIsRecording(false);
-    // Auto-submit after brief pause for transcript to settle
+    clearInterval(responseTimerRef.current);
+    stopChunkedAnalysis();
     setTimeout(() => {
       const answer = (answerRef.current || currentAnswer).trim();
-      if (answer) {
-        handleSubmitAnswer(answer);
-      }
+      if (answer) handleSubmitAnswer(answer);
     }, 500);
   };
 
@@ -147,19 +142,29 @@ export default function TutorialConversation() {
     setCurrentAnswer('');
     setIsLoading(true);
     const newHistory = [...apiHistory, { role: 'user', content: answer }];
+    const isFinalRound = roundCount >= MIN_ROUNDS;
+
     try {
-      const result = await getFollowUpResponse(newHistory, sourceText);
-      setApiHistory([...newHistory, { role: 'assistant', content: result.response }]);
+      // Use cached background result if available, else fire fresh call
+      const freshFn = isFinalRound
+        ? (finalAnswer) => getClosingResponse([...apiHistory, { role: 'user', content: finalAnswer }], sourceText)
+        : (finalAnswer) => getFollowUpResponse([...apiHistory, { role: 'user', content: finalAnswer }], sourceText);
+
+      const result = await finishAnalysis({ freshFn, finalTranscript: answer });
+      const updatedHistory = [...newHistory, { role: 'assistant', content: result.response }];
+      setApiHistory(updatedHistory);
       setRoundCount((r) => r + 1);
       setIsLoading(false);
       addSupervisorResponse(result.response, result.internal_assessment || null, currentMode);
-      if (!result.should_continue || roundCount >= 4) {
-        if (roundCount >= 4) setTimeout(() => handleFinish([...newHistory, { role: 'assistant', content: result.response }]), 2000);
+
+      if (isFinalRound || (roundCount >= MIN_ROUNDS - 1 && !result.should_continue)) {
+        setTimeout(() => handleFinish(updatedHistory), 3000);
       }
     } catch (err) {
-      console.error('Follow-up failed:', err);
+      console.error('Response failed:', err);
       setIsLoading(false);
-      setDisplayItems((prev) => [...prev, { type: 'message', role: 'supervisor', text: "Good point. What's the key takeaway from our discussion?" }]);
+      setDisplayItems((prev) => [...prev, { type: 'message', role: 'supervisor', text: "Good work today. Let's see your report." }]);
+      setTimeout(() => handleFinish(newHistory), 2000);
     }
   };
 
@@ -175,28 +180,26 @@ export default function TutorialConversation() {
 
   return (
     <div className="grid grid-cols-12 gap-6 min-h-[calc(100vh-120px)]">
-      {/* LEFT: Transcript (7 cols) */}
-      <section className="col-span-12 md:col-span-8 paper-card flex flex-col">
-        {/* Header strip */}
+      {/* LEFT: Transcript */}
+      <section className="col-span-12 md:col-span-8 paper-card-elevated flex flex-col">
+        {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: 'var(--rule-light)' }}>
           <div>
-            <div className="label-caps">Topic</div>
+            <div className="label-caps" style={{ color: 'var(--oxblood)' }}>Viva in progress</div>
             <div className="serif font-semibold text-lg mt-0.5">{topic}</div>
           </div>
           <div className="flex items-center gap-4">
-            {/* Progress dots */}
             <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className="w-2.5 h-2.5 rounded-full transition-colors"
+                <div key={n} className="w-2.5 h-2.5 rounded-full transition-all duration-300"
                   style={{
-                    background: n <= roundCount ? 'var(--indigo)' : 'var(--rule)',
-                    opacity: n <= roundCount ? 1 : 0.4,
+                    background: n <= roundCount ? 'var(--gradient-indigo)' : 'var(--rule)',
+                    opacity: n <= roundCount ? 1 : 0.3,
+                    transform: n === roundCount ? 'scale(1.3)' : 'scale(1)',
                   }} />
               ))}
             </div>
-            <div className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-              <span>Exchange {roundCount} of ~5</span>
-              <span className="mx-2">·</span>
+            <div className="mono text-sm" style={{ color: 'var(--ink-muted)' }}>
               <span>{Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, '0')}</span>
             </div>
           </div>
@@ -209,79 +212,75 @@ export default function TutorialConversation() {
           ))}
 
           {isLoading && !isFinishing && (
-            <div className="grid grid-cols-[100px_1fr] gap-4 animate-fade-in">
-              <div className="label-caps pt-1.5">Supervisor</div>
+            <div className="grid grid-cols-[90px_1fr] gap-5 animate-fade-in">
+              <div className="label-caps pt-1.5" style={{ color: 'var(--indigo)' }}>Supervisor</div>
               <div className="supervisor-block p-4">
-                <div className="flex gap-1.5">
-                  {[0, 0.2, 0.4].map((d) => (
-                    <span key={d} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--ink-faint)', animationDelay: `${d}s` }} />
-                  ))}
-                </div>
+                <div className="flex gap-2"><span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" /></div>
               </div>
-            </div>
-          )}
-
+            </div>)}
           {isFinishing && (
             <div className="text-center py-8 animate-fade-in">
               <div className="label-caps mb-2">Preparing report</div>
               <p className="serif text-lg" style={{ color: 'var(--ink-muted)' }}>Reviewing the full conversation...</p>
+              <div className="mt-4 w-48 mx-auto h-1.5 rounded-full animate-shimmer" />
             </div>)}
           <div ref={scrollRef} />
         </div>
 
-        {/* Input — big centered record button */}
+        {/* Input area */}
         {!isLoading && !isFinishing && (
-          <div className="flex-1 flex flex-col items-center justify-center py-8 gap-4">
+          <div className="border-t px-6 py-6" style={{ borderColor: 'var(--rule-light)' }}>
             {currentAnswer ? (
-              <div className="w-full max-w-lg rounded-xl border px-4 py-3 text-sm"
-                style={{ borderColor: 'var(--rule)', background: 'var(--panel)' }}>
-                {currentAnswer}
-              </div>
+              <div className="w-full rounded-xl border px-4 py-3 text-sm mb-4"
+                style={{ borderColor: 'var(--rule)', background: 'var(--panel)' }}>{currentAnswer}</div>
             ) : !isRecording && (
-              <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>
-                Your turn — speak clearly, aim for precision
+              <p className="text-base text-center mb-4 font-medium" style={{ color: 'var(--ink-muted)' }}>
+                Respond. Be precise.
               </p>
             )}
 
             {isRecording && (
-              <p className="text-sm flex items-center gap-2" style={{ color: 'var(--oxblood)' }}>
+              <div className="flex items-center justify-center gap-3 mb-4">
                 <span className="w-2.5 h-2.5 rounded-full animate-pulse-record" style={{ background: 'var(--oxblood)' }} />
-                Listening...
-              </p>
+                <span className="mono text-lg font-medium" style={{ color: 'var(--oxblood)' }}>
+                  {Math.floor(responseElapsed / 60)}:{(responseElapsed % 60).toString().padStart(2, '0')}
+                </span>
+                <span className="text-xs font-medium" style={{ color: MAX_RESPONSE_SECONDS - responseElapsed <= 10 ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
+                  {MAX_RESPONSE_SECONDS - responseElapsed}s left
+                </span>
+              </div>
             )}
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center gap-4">
               {!isRecording && currentAnswer.trim() ? (
                 <button onClick={() => handleSubmitAnswer((answerRef.current || currentAnswer).trim())}
-                  className="w-20 h-20 rounded-full text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
-                  style={{ background: 'var(--indigo)' }}>
-                  <ArrowRight className="w-8 h-8" />
+                  className="record-btn w-16 h-16">
+                  <ArrowRight className="w-7 h-7" />
                 </button>
               ) : (
                 <button onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  className="w-20 h-20 rounded-full text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
-                  style={{ background: isRecording ? 'var(--oxblood)' : 'var(--ink)' }}>
-                  {isRecording ? <Square className="w-8 h-8 fill-white" /> : <Mic className="w-8 h-8" />}
+                  className={`record-btn w-16 h-16 ${isRecording ? 'record-btn--active' : ''}`}>
+                  {isRecording ? <Square className="w-7 h-7 fill-white" /> : <Mic className="w-7 h-7" />}
                 </button>
               )}
             </div>
 
-            <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-              {isRecording ? 'Click to stop' : currentAnswer.trim() ? 'Click to submit' : 'Press R or click to record'}
-            </span>
-
-            {roundCount >= 2 && !isRecording && (
-              <button onClick={() => handleFinish()}
-                className="mt-2 text-xs flex items-center gap-1"
-                style={{ color: 'var(--ink-muted)' }}>
-                End tutorial & see report <ArrowRight className="w-3 h-3" />
-              </button>
-            )}
+            <div className="text-center mt-3">
+              <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                {isRecording ? 'Click to stop' : currentAnswer.trim() ? 'Click to submit' : 'Press R or click to record'}
+              </span>
+              {roundCount >= MIN_ROUNDS && !isRecording && (
+                <button onClick={() => handleFinish()} className="block mx-auto mt-2 text-xs font-medium"
+                  style={{ color: 'var(--indigo)' }}>
+                  End tutorial & see report →
+                </button>
+              )}
+            </div>
           </div>
         )}
       </section>
 
-      {/* RIGHT: Docket (4 cols) */}
+      {/* RIGHT: Dashboard */}
       <aside className="hidden md:flex md:col-span-4 flex-col gap-4">
         <SessionDashboard
           topic={topic}

@@ -3,6 +3,7 @@ import { Mic, Square, Keyboard, Clock, ArrowRight } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
 import { isSupported, startListening, stopListening } from '../services/speechService';
 import { startChunkedAnalysis, stopChunkedAnalysis, getCallCount } from '../services/chunkedAnalysis';
+import { analyzeExplanation } from '../api/claude';
 
 const MAX_RECORDING_SECONDS = 60;
 
@@ -26,12 +27,10 @@ export default function VoiceRecorder() {
   const timerRef = useRef(null);
   const transcriptRef = useRef('');
 
-  // Keep ref in sync with transcript for chunked analysis
   useEffect(() => {
     transcriptRef.current = transcript;
   }, [transcript]);
 
-  // Timer + auto-stop at max duration
   useEffect(() => {
     if (isRecording) {
       timerRef.current = setInterval(() => {
@@ -78,11 +77,9 @@ export default function VoiceRecorder() {
 
     if (started) {
       setIsRecording(true);
-      // Start background chunked analysis
       startChunkedAnalysis({
+        apiFn: (currentTranscript) => analyzeExplanation(sourceText, currentTranscript, confidenceBefore),
         getTranscript: () => transcriptRef.current,
-        sourceText,
-        confidenceBefore,
       });
     }
   };
@@ -92,7 +89,6 @@ export default function VoiceRecorder() {
     setIsRecording(false);
     setRecordingDuration(elapsed);
     stopChunkedAnalysis();
-    // Auto-submit after brief pause for final transcript to settle
     setTimeout(() => {
       const finalTranscript = (transcriptRef.current || transcript).trim();
       if (finalTranscript) {
@@ -106,72 +102,97 @@ export default function VoiceRecorder() {
     stopListening();
     setIsRecording(false);
     setRecordingDuration(elapsed);
-    // Auto-submit after a brief moment for final transcript to settle
     setTimeout(() => handleSubmit(), 300);
   }, [elapsed]);
 
   const handleSubmit = async () => {
     const finalTranscript = showTextFallback ? textInput.trim() : (transcriptRef.current || transcript).trim();
     if (!finalTranscript) return;
-
     setTranscript(finalTranscript);
     stopChunkedAnalysis();
     setStep('tutorial');
   };
 
-  const hasContent = showTextFallback ? textInput.trim().length > 0 : transcript.trim().length > 0;
   const remaining = MAX_RECORDING_SECONDS - elapsed;
+  const progress = elapsed / MAX_RECORDING_SECONDS;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center">
-        <h2 className="serif text-3xl font-semibold tracking-tight">
+    <div className="max-w-3xl mx-auto animate-fade-in">
+      {/* ── Header ── */}
+      <div className="text-center mb-10">
+        <div className="label-caps mb-2">Your turn</div>
+        <h2 className="serif text-4xl font-bold tracking-tight">
           Explain: <span style={{ color: 'var(--indigo)' }}>{topic}</span>
         </h2>
-        <p className="text-base mt-2" style={{ color: 'var(--ink-muted)' }}>
+        <p className="text-base mt-3" style={{ color: 'var(--ink-muted)' }}>
           Talk through what you know in under a minute. Be messy — that's the point.
         </p>
       </div>
 
       {!showTextFallback ? (
-        <div className="flex flex-col items-center gap-6">
-          {/* Record button */}
-          <button
-            onClick={isRecording ? handleStopRecording : handleStartRecording}
-            className="w-28 h-28 rounded-full flex items-center justify-center transition-all shadow-lg"
-            style={{
-              background: isRecording ? 'var(--oxblood)' : 'var(--indigo)',
-            }}
-          >
-            {isRecording
-              ? <Square className="w-10 h-10 text-white fill-white" />
-              : <Mic className="w-10 h-10 text-white" />}
-          </button>
-
-          {/* Timer */}
-          <div className="text-center">
-            <span className="font-mono text-3xl" style={{ color: isRecording ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
-              {formatTime(elapsed)}
-            </span>
+        <div className="flex flex-col items-center gap-8">
+          {/* ── Record button with animated ring ── */}
+          <div className="relative">
             {isRecording && (
-              <p className="text-sm mt-1" style={{ color: remaining <= 10 ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
-                {remaining}s remaining
+              <>
+                <div className="animate-ring-pulse" />
+                <div className="animate-ring-pulse" style={{ animationDelay: '0.6s' }} />
+              </>
+            )}
+            <button
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              className={`record-btn w-32 h-32 ${isRecording ? 'record-btn--active' : ''}`}
+            >
+              {isRecording
+                ? <Square className="w-12 h-12 fill-white" />
+                : <Mic className="w-12 h-12" />}
+            </button>
+          </div>
+
+          {/* ── Timer with progress arc ── */}
+          <div className="text-center">
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="mono text-4xl font-medium"
+                style={{ color: isRecording ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
+                {formatTime(elapsed)}
+              </span>
+              <span className="text-sm" style={{ color: 'var(--ink-faint)' }}> / 1:00</span>
+            </div>
+            {isRecording && (
+              <div className="mt-3 w-64 mx-auto">
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--rule)' }}>
+                  <div className="h-full rounded-full transition-all duration-1000 ease-linear"
+                    style={{
+                      width: `${progress * 100}%`,
+                      background: remaining <= 10 ? 'var(--gradient-oxblood)' : 'var(--gradient-indigo)',
+                    }} />
+                </div>
+                <p className="text-xs mt-1.5 font-medium"
+                  style={{ color: remaining <= 10 ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
+                  {remaining}s remaining
+                </p>
+              </div>
+            )}
+            {!isRecording && !interimText && (
+              <p className="text-sm mt-2" style={{ color: 'var(--ink-faint)' }}>
+                Click to start recording
               </p>
             )}
           </div>
 
           {/* Background analysis indicator */}
           {isRecording && bgAnalysisCount > 0 && (
-            <p className="text-sm flex items-center gap-1" style={{ color: 'var(--indigo)' }}>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full animate-fade-in"
+              style={{ background: 'var(--indigo-bg)', color: 'var(--indigo)' }}>
               <Clock className="w-4 h-4" />
-              Supervisor is already listening...
-            </p>
+              <span className="text-sm font-medium">Supervisor is already listening...</span>
+            </div>
           )}
 
           {/* Live transcript */}
           {interimText && (
-            <div className="w-full rounded-xl p-5 text-base leading-relaxed"
-              style={{ background: 'var(--surface)', border: '1px solid var(--rule)', color: 'var(--ink-muted)' }}>
+            <div className="w-full paper-card p-5 text-base leading-relaxed animate-fade-in"
+              style={{ color: 'var(--ink-muted)' }}>
               {interimText}
             </div>
           )}
@@ -179,7 +200,7 @@ export default function VoiceRecorder() {
           {/* Mic fallback */}
           {!isRecording && (
             <button onClick={() => setShowTextFallback(true)}
-              className="text-sm flex items-center gap-1" style={{ color: 'var(--ink-faint)' }}>
+              className="text-sm flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: 'var(--ink-faint)' }}>
               <Keyboard className="w-4 h-4" /> Having mic issues? Type instead
             </button>
           )}
@@ -198,12 +219,12 @@ export default function VoiceRecorder() {
         </div>
       )}
 
-      {/* Text fallback still needs a submit button */}
+      {/* Text fallback submit */}
       {!isRecording && showTextFallback && textInput.trim() && (
         <button onClick={handleSubmit}
-          className="w-full py-4 rounded-xl text-white text-lg font-semibold transition-transform hover:scale-[1.01]"
-          style={{ background: 'var(--indigo)' }}>
-          Submit to Your Supervisor →
+          className="w-full mt-4 py-4 rounded-xl text-white text-lg font-semibold transition-all hover:scale-[1.01]"
+          style={{ background: 'var(--gradient-indigo)', boxShadow: 'var(--glow-indigo)' }}>
+          Submit to Your Supervisor <ArrowRight className="w-5 h-5 inline ml-2" />
         </button>
       )}
     </div>

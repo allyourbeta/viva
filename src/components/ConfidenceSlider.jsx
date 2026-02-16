@@ -1,4 +1,5 @@
 import useSessionStore from '../store/sessionStore';
+import { ArrowRight } from 'lucide-react';
 
 export default function ConfidenceSlider() {
   const topic = useSessionStore((s) => s.topic);
@@ -13,25 +14,25 @@ export default function ConfidenceSlider() {
   };
 
   return (
-    <div className="max-w-lg mx-auto">
-      <div className="paper-card p-8 text-center space-y-8">
+    <div className="max-w-lg mx-auto animate-fade-in">
+      <div className="paper-card-elevated p-8 text-center space-y-8">
         <div>
           <div className="label-caps mb-2">Before you begin</div>
-          <h2 className="serif text-2xl font-semibold tracking-tight">
+          <h2 className="serif text-2xl font-bold tracking-tight">
             How well do you know this?
           </h2>
           <p className="text-sm mt-2" style={{ color: 'var(--ink-muted)' }}>
             Rate your confidence in explaining
-            <strong className="font-medium" style={{ color: 'var(--ink)' }}> {topic}</strong>.
-            Be honest — your supervisor will compare this to your actual performance.
+            <strong className="font-semibold" style={{ color: 'var(--ink)' }}> {topic}</strong>.
+            Be honest — your supervisor will compare.
           </p>
         </div>
 
         <div className="py-4">
-          <div className="serif text-6xl font-bold" style={{ color: 'var(--indigo)' }}>
+          <div className="serif text-7xl font-bold tracking-tight" style={{ color: 'var(--indigo)' }}>
             {confidence}
           </div>
-          <div className="text-sm mt-2 font-medium" style={{ color: 'var(--ink-muted)' }}>
+          <div className="text-sm mt-2 font-semibold" style={{ color: 'var(--ink-muted)' }}>
             {labels[confidence]}
           </div>
           <div className="mt-8 px-4">
@@ -39,10 +40,10 @@ export default function ConfidenceSlider() {
               type="range" min={1} max={10}
               value={confidence}
               onChange={(e) => setConfidence(Number(e.target.value))}
-              className="w-full accent-[var(--indigo)]"
+              className="w-full"
               style={{ accentColor: 'var(--indigo)' }}
             />
-            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--ink-faint)' }}>
+            <div className="flex justify-between text-xs mt-1 font-medium" style={{ color: 'var(--ink-faint)' }}>
               <span>No idea</span>
               <span>Expert</span>
             </div>
@@ -58,9 +59,9 @@ export default function ConfidenceSlider() {
 
         <button
           onClick={() => setStep('recording')}
-          className="w-full py-3 rounded-xl text-white font-medium transition-colors"
-          style={{ background: 'var(--indigo)' }}>
-          Start Explaining →
+          className="w-full py-3.5 rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          style={{ background: 'var(--gradient-indigo)', boxShadow: 'var(--glow-indigo)' }}>
+          Start Explaining <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>

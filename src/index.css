@@ -1,37 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-serif: 'Source Serif 4', serif;
   --font-sans: 'DM Sans', sans-serif;
-
-  /* Paper & surface colors */
+  --font-mono: 'JetBrains Mono', monospace;
   --color-paper: #F7F1E3;
   --color-surface: #FBF7EE;
   --color-panel: #fdf8ee;
-
-  /* Ink colors */
   --color-ink: #2b2114;
   --color-ink-muted: #7a6a52;
   --color-ink-faint: #b39a74;
-
-  /* Border/rule */
   --color-rule: #e0d2be;
   --color-rule-light: #e8dcc9;
-
-  /* Accent colors */
   --color-oxblood: #7A2332;
   --color-indigo: #2D3A8C;
   --color-sage: #2F6F4E;
   --color-amber-accent: #B7791F;
-
-  /* Accent backgrounds */
   --color-sage-bg: #E6F3EC;
   --color-amber-bg: #FBF0D6;
   --color-oxblood-bg: #fde8ec;
   --color-indigo-bg: #edf2ff;
-
-  /* Legacy warm-* palette (maps to scholarly ink/paper tones) */
   --color-warm-50: #fdfaf5;
   --color-warm-100: #f5f0e8;
   --color-warm-200: #e0d2be;
@@ -42,8 +31,6 @@
   --color-warm-700: #3d3528;
   --color-warm-800: #2b2114;
   --color-warm-900: #2b2114;
-
-  /* Legacy primary-* palette (maps to indigo accent) */
   --color-primary-50: #edf2ff;
   --color-primary-100: #dbe4ff;
   --color-primary-200: #bac8ff;
@@ -57,7 +44,6 @@
 }
 
 @layer base {
-  /* Raw CSS custom properties for use in inline styles (style={{}}) */
   :root {
     --paper: #F7F1E3;
     --surface: #FBF7EE;
@@ -76,6 +62,11 @@
     --oxblood-bg: #fde8ec;
     --indigo-bg: #edf2ff;
     --white-glass: rgba(255,255,255,0.4);
+    --gradient-indigo: linear-gradient(135deg, #2D3A8C 0%, #4F46E5 50%, #6366F1 100%);
+    --gradient-oxblood: linear-gradient(135deg, #7A2332 0%, #BE123C 100%);
+    --gradient-sage: linear-gradient(135deg, #2F6F4E 0%, #059669 100%);
+    --glow-indigo: 0 0 40px rgba(79, 70, 229, 0.15), 0 0 80px rgba(99, 102, 241, 0.08);
+    --glow-oxblood: 0 0 40px rgba(190, 18, 60, 0.2);
   }
 
   body {
@@ -89,12 +80,14 @@
 
 @layer components {
   .serif { font-family: var(--font-serif); }
+  .mono { font-family: var(--font-mono); }
 
   .label-caps {
     font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.22em;
     color: var(--color-ink-muted);
+    font-weight: 600;
   }
 
   .paper-card {
@@ -104,9 +97,16 @@
     box-shadow: 0 1px 0 rgba(43,33,20,0.06), 0 12px 28px rgba(43,33,20,0.08);
   }
 
+  .paper-card-elevated {
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: 1.25rem;
+    box-shadow: 0 1px 0 rgba(43,33,20,0.06), 0 20px 48px rgba(43,33,20,0.12), 0 4px 12px rgba(43,33,20,0.06);
+  }
+
   .supervisor-block {
     background: var(--color-panel);
-    border-left: 4px solid var(--color-ink-faint);
+    border-left: 4px solid var(--indigo);
     border-radius: 0 0.75rem 0.75rem 0;
   }
 
@@ -130,6 +130,61 @@
   .pill-mastered { background: var(--color-sage-bg); color: var(--color-sage); }
   .pill-probing { background: var(--color-amber-bg); color: var(--color-amber-accent); }
   .pill-gap { background: #f5f0e8; color: var(--color-ink-muted); }
+
+  .hero-gradient {
+    background: var(--gradient-indigo);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.3) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .record-btn {
+    background: var(--gradient-indigo);
+    color: white;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: var(--glow-indigo);
+    cursor: pointer;
+    border: none;
+  }
+  .record-btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 0 50px rgba(79, 70, 229, 0.25), 0 0 100px rgba(99, 102, 241, 0.12);
+  }
+  .record-btn--active {
+    background: var(--gradient-oxblood);
+    box-shadow: var(--glow-oxblood);
+    animation: recordGlow 1.5s ease-in-out infinite;
+  }
+  .record-btn--active:hover {
+    box-shadow: 0 0 50px rgba(190, 18, 60, 0.3);
+  }
+
+  .stat-reveal {
+    background: linear-gradient(135deg, rgba(45,58,140,0.06) 0%, rgba(99,102,241,0.04) 100%);
+    border: 1px solid var(--rule);
+    border-radius: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-reveal::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gradient-indigo);
+  }
 }
 
 @layer utilities {
@@ -139,10 +194,74 @@
   }
   .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
 
+  .animate-stagger-1 { animation: fadeIn 0.5s ease-out 0.05s forwards; opacity: 0; }
+  .animate-stagger-2 { animation: fadeIn 0.5s ease-out 0.15s forwards; opacity: 0; }
+  .animate-stagger-3 { animation: fadeIn 0.5s ease-out 0.25s forwards; opacity: 0; }
+  .animate-stagger-4 { animation: fadeIn 0.5s ease-out 0.35s forwards; opacity: 0; }
+
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-slide-in-left { animation: slideInLeft 0.4s ease-out forwards; }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-slide-in-right { animation: slideInRight 0.4s ease-out forwards; }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .animate-scale-in { animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
   @keyframes pulseRecord {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
   }
   .animate-pulse-record { animation: pulseRecord 1.2s ease-in-out infinite; }
-}
 
+  @keyframes recordGlow {
+    0%, 100% { box-shadow: 0 0 40px rgba(190, 18, 60, 0.2); }
+    50% { box-shadow: 0 0 60px rgba(190, 18, 60, 0.35), 0 0 100px rgba(190, 18, 60, 0.1); }
+  }
+
+  @keyframes ringPulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  .animate-ring-pulse {
+    animation: ringPulse 1.8s ease-out infinite;
+    border-radius: 9999px;
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--oxblood);
+    pointer-events: none;
+  }
+
+  .typing-dot {
+    width: 6px; height: 6px;
+    border-radius: 9999px;
+    background: var(--indigo);
+    display: inline-block;
+  }
+  .typing-dot:nth-child(1) { animation: typingDot 1.4s ease-in-out infinite 0s; }
+  .typing-dot:nth-child(2) { animation: typingDot 1.4s ease-in-out infinite 0.2s; }
+  .typing-dot:nth-child(3) { animation: typingDot 1.4s ease-in-out infinite 0.4s; }
+  @keyframes typingDot {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, var(--rule) 25%, var(--rule-light) 50%, var(--rule) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}

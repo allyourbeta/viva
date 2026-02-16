@@ -3,6 +3,7 @@ import {
   TUTORIAL_SYSTEM_PROMPT,
   buildOpeningMessages,
   FOLLOWUP_SYSTEM_PROMPT,
+  CLOSING_SYSTEM_PROMPT,
   WRAP_UP_PROMPT,
 } from '../prompts/tutorial.js';
 
@@ -57,6 +58,25 @@ export async function getFollowUpResponse(conversationHistory, sourceText) {
   });
 
   console.log(`[Viva Tutorial] Follow-up in ${((Date.now() - start) / 1000).toFixed(1)}s`);
+  return extractJSON(response);
+}
+
+/**
+ * Closing move — supervisor's final remark before the session ends.
+ * No question asked — just a brief observation and encouragement.
+ */
+export async function getClosingResponse(conversationHistory, sourceText) {
+  console.log('[Viva Tutorial] Closing move...');
+  const start = Date.now();
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    system: CLOSING_SYSTEM_PROMPT + `\n\n## Source Material\n${sourceText || '(Use your own knowledge.)'}`,
+    messages: conversationHistory,
+  });
+
+  console.log(`[Viva Tutorial] Closing in ${((Date.now() - start) / 1000).toFixed(1)}s`);
   return extractJSON(response);
 }
 

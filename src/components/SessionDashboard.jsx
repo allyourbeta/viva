@@ -30,24 +30,24 @@ export default function SessionDashboard({ topic, confidenceBefore, currentMode,
       <div className="paper-card p-5">
         <div className="label-caps mb-3">Session</div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl p-3" style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
-            <div className="text-xs" style={{ color: 'var(--ink-muted)' }}>Mode</div>
+          <div className="stat-reveal p-3 pt-5">
+            <div className="text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>Mode</div>
             <div className="mt-1 flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${currentMode === 'level_up' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span className="text-sm font-medium">{mode.label}</span>
+              <span className={`w-2.5 h-2.5 rounded-full ${currentMode === 'level_up' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span className="text-sm font-semibold">{mode.label}</span>
             </div>
           </div>
-          <div className="rounded-xl p-3" style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
-            <div className="text-xs" style={{ color: 'var(--ink-muted)' }}>Timer</div>
-            <div className="mt-1 text-sm font-medium">{mins}:{secs}</div>
+          <div className="stat-reveal p-3 pt-5">
+            <div className="text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>Timer</div>
+            <div className="mt-1 mono text-sm font-medium">{mins}:{secs}</div>
           </div>
-          <div className="rounded-xl p-3" style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
-            <div className="text-xs" style={{ color: 'var(--ink-muted)' }}>Exchanges</div>
-            <div className="mt-1 text-sm font-medium">{roundCount}</div>
+          <div className="stat-reveal p-3 pt-5">
+            <div className="text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>Exchanges</div>
+            <div className="mt-1 text-sm font-semibold">{roundCount}</div>
           </div>
-          <div className="rounded-xl p-3" style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
-            <div className="text-xs" style={{ color: 'var(--ink-muted)' }}>Confidence</div>
-            <div className="mt-1 text-sm font-medium">{confidenceBefore}/10</div>
+          <div className="stat-reveal p-3 pt-5">
+            <div className="text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>Confidence</div>
+            <div className="mt-1 text-sm font-semibold">{confidenceBefore}/10</div>
           </div>
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function SessionDashboard({ topic, confidenceBefore, currentMode,
         <div className="paper-card p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="label-caps">Concepts</span>
-            <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>{concepts.length} items</span>
+            <span className="text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>{concepts.length} items</span>
           </div>
           <div className="space-y-2">
             {concepts.map((c, i) => (
@@ -65,7 +65,7 @@ export default function SessionDashboard({ topic, confidenceBefore, currentMode,
                 c.status === 'mastered' ? 'pill-mastered' : 'pill-probing'
               }`} style={{ border: '1px solid var(--rule)', animationDelay: `${i * 60}ms` }}>
                 <span className="font-medium">{c.name}</span>
-                <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>{c.status}</span>
+                <span className="text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>{c.status}</span>
               </div>
             ))}
           </div>
@@ -75,7 +75,7 @@ export default function SessionDashboard({ topic, confidenceBefore, currentMode,
       {/* Current target */}
       <div className="rounded-2xl border border-dashed p-4" style={{ background: 'var(--amber-bg)', borderColor: 'var(--rule)' }}>
         <div className="label-caps mb-1">Currently targeting</div>
-        <p className="text-sm leading-relaxed">
+        <p className="text-sm leading-relaxed font-medium">
           {assessments.length > 0
             ? assessments[assessments.length - 1].key_weakness_targeted
             : 'Analyzing your explanation...'}

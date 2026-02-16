@@ -484,32 +484,29 @@ describe('LearningCard (scholarly report)', () => {
     expect(heading.className).toContain('serif');
   });
 
-  it('shows confidence reveal band with before/after/delta', () => {
+  it('shows supervisor assessment score', () => {
     render(<LearningCard onDone={onDone} />);
-    expect(screen.getByText('Before')).toBeInTheDocument();
-    expect(screen.getByText('After')).toBeInTheDocument();
-    expect(screen.getByText('Delta')).toBeInTheDocument();
-  });
-
-  it('shows confidence values (5 before, 7 after, +2 delta)', () => {
-    render(<LearningCard onDone={onDone} />);
-    // Before = 5
-    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText("Supervisor's Assessment")).toBeInTheDocument();
     // After = 7
     expect(screen.getByText('7')).toBeInTheDocument();
-    // Delta = +2
-    expect(screen.getByText('+2')).toBeInTheDocument();
   });
 
-  it('shows rationale text for positive delta', () => {
+  it('shows assessment score with /10 denominator', () => {
     render(<LearningCard onDone={onDone} />);
-    expect(screen.getByText(/understanding deepened/)).toBeInTheDocument();
+    expect(screen.getByText('/10')).toBeInTheDocument();
   });
 
-  it('confidence reveal has 3-column grid', () => {
-    const { container } = render(<LearningCard onDone={onDone} />);
-    const grid = container.querySelector('.grid-cols-3');
-    expect(grid).toBeTruthy();
+  it('assessment score is color-coded (sage for 6+, oxblood for below)', () => {
+    render(<LearningCard onDone={onDone} />);
+    // Score of 7 should be present and rendered large
+    const scoreEl = screen.getByText('7');
+    expect(scoreEl).toBeInTheDocument();
+  });
+
+  it('handles null learningCard assessment gracefully', () => {
+    mockStoreState = createMockStore({ learningCard: null });
+    render(<LearningCard onDone={onDone} />);
+    expect(screen.getByText('?')).toBeInTheDocument();
   });
 
   it('shows key correction section', () => {
@@ -571,16 +568,15 @@ describe('LearningCard (scholarly report)', () => {
     expect(screen.getByText(/Saved to your tutorial history/)).toBeInTheDocument();
   });
 
-  it('handles negative delta (honest recalibration)', () => {
+  it('handles low confidence_after with oxblood color', () => {
     mockStoreState = createMockStore({
       learningCard: {
         ...createMockStore().learningCard,
         confidence_after: 3,
       },
     });
-    render(<LearningCard onDone={onDone} />);
-    expect(screen.getByText('-2')).toBeInTheDocument();
-    expect(screen.getByText(/recalibration/)).toBeInTheDocument();
+    const { container } = render(<LearningCard onDone={onDone} />);
+    expect(screen.getByText('3')).toBeInTheDocument();
   });
 
   it('handles null learningCard gracefully', () => {

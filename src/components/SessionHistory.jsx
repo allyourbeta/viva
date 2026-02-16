@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Mic, TrendingUp, TrendingDown, Minus, BookOpen, Target, Brain } from 'lucide-react';
+import { Mic, TrendingUp, TrendingDown, Minus, BookOpen, Target, Brain, ArrowRight, Zap } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
 import { loadSessions } from '../api/supabase';
 import { mergeWithDemoSessions } from '../services/demoData';
@@ -38,14 +38,15 @@ function computePatterns(sessions) {
 }
 
 /* ── Session card in the ledger ── */
-function SessionEntry({ session }) {
+function SessionEntry({ session, index }) {
   const s = session;
   const delta = s.confidence_after != null ? s.confidence_after - (s.confidence_before || 0) : null;
   const remember = s.one_thing_to_remember || s.learning_card?.one_thing_to_remember;
   const nextSeed = s.next_session_seed || s.learning_card?.next_session_seed;
 
   return (
-    <div className="p-5 hover:bg-white/50 transition-colors" style={{ borderColor: 'var(--rule-light)' }}>
+    <div className={`p-5 hover:bg-white/50 transition-colors animate-stagger-${Math.min(index + 1, 4)}`}
+      style={{ borderColor: 'var(--rule-light)' }}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -62,7 +63,7 @@ function SessionEntry({ session }) {
           </div>
         </div>
         {delta != null && (
-          <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+          <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
             delta > 0 ? 'pill-mastered' : delta < 0 ? 'pill-gap' : ''
           }`} style={delta === 0 ? { background: 'var(--white-glass)', color: 'var(--ink-muted)' } : {}}>
             {delta > 0 ? <TrendingUp className="w-3.5 h-3.5" />
@@ -114,10 +115,42 @@ export default function SessionHistory({ onNewSession }) {
 
   return (
     <div className="animate-fade-in">
+      {/* ══ HERO BANNER ══ */}
+      <div className="hero-gradient rounded-2xl p-8 mb-8 animate-scale-in">
+        <div className="relative z-10 flex items-start justify-between gap-8">
+          <div className="flex-1">
+            <div className="text-xs uppercase tracking-widest opacity-60 mb-2 font-medium">
+              Voice-First Learning
+            </div>
+            <h1 className="serif text-4xl md:text-5xl font-bold tracking-tight leading-tight mb-3">
+              Can you explain it<br />under pressure?
+            </h1>
+            <p className="text-base opacity-80 leading-relaxed" style={{ maxWidth: '28rem' }}>
+              Say what you know. Get challenged by an AI supervisor.
+              Find out what you actually understand.
+            </p>
+          </div>
+          <div className="hidden md:flex flex-col items-center gap-3 pt-4">
+            <div className="flex items-center gap-2">
+              {['Explain', 'Defend', 'Know'].map((word, i) => (
+                <span key={word}
+                  className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full animate-stagger-${i + 1}`}
+                  style={{
+                    background: 'rgba(255,255,255,0.15)',
+                    backdropFilter: 'blur(4px)',
+                  }}>
+                  {word}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-12 gap-6">
         {/* ══════ LEFT PANEL ══════ */}
         <section className="col-span-12 md:col-span-5 flex flex-col gap-5">
-          <div className="paper-card p-6 flex flex-col gap-4">
+          <div className="paper-card-elevated p-6 flex flex-col gap-4">
             <div>
               <div className="label-caps">New tutorial</div>
               <h2 className="mt-1 serif text-2xl font-semibold tracking-tight">
@@ -125,8 +158,8 @@ export default function SessionHistory({ onNewSession }) {
               </h2>
             </div>
             <label className="block">
-              <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>Topic</span>
-              <div className="mt-1 rounded-xl border px-4 py-3 flex items-center justify-between"
+              <span className="text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>Topic</span>
+              <div className="mt-1 rounded-xl border px-4 py-3 flex items-center justify-between transition-all focus-within:shadow-[0_0_0_2px_var(--indigo)]"
                 style={{ borderColor: 'var(--rule)', background: 'var(--panel)' }}>
                 <input className="bg-transparent outline-none text-sm flex-1"
                   placeholder="e.g. Backpropagation, Nash equilibrium..."
@@ -136,91 +169,75 @@ export default function SessionHistory({ onNewSession }) {
               </div>
             </label>
             <button onClick={handleStart}
-              className="w-full rounded-xl px-4 py-3 text-white text-sm font-medium flex items-center justify-center gap-2"
-              style={{ background: 'var(--indigo)' }}>
+              className="w-full rounded-xl px-4 py-3.5 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{ background: 'var(--gradient-indigo)', boxShadow: 'var(--glow-indigo)' }}>
               <Mic className="w-4 h-4" /> Start viva
             </button>
           </div>
 
-          {/* The pitch — different for first-timers vs returning */}
-          <div className="paper-card p-6">
-            <div className="label-caps mb-3">
-              {isFirstTime ? 'How this works' : 'The viva method'}
-            </div>
-            {isFirstTime ? (
+          {/* How it works */}
+          {isFirstTime && (
+            <div className="paper-card p-6 animate-stagger-2">
+              <div className="label-caps mb-3">How this works</div>
               <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ background: 'var(--indigo-bg)', color: 'var(--indigo)' }}>1</div>
-                  <div>
-                    <p className="text-sm font-medium">You explain a concept out loud</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>
-                      60 seconds. No notes. Just what you actually know.
-                    </p>
+                {[
+                  { num: '1', bg: 'var(--indigo-bg)', color: 'var(--indigo)', title: 'You explain a concept out loud', desc: '60 seconds. No notes. Just what you actually know.' },
+                  { num: '2', bg: 'var(--amber-bg)', color: 'var(--amber-accent)', title: 'A supervisor finds the gaps', desc: 'Targeted questions expose what you think vs. what you actually know.' },
+                  { num: '3', bg: 'var(--sage-bg)', color: 'var(--sage)', title: 'You leave knowing what to study next', desc: 'Report card with mastered concepts, remaining gaps, and one sentence to remember.' },
+                ].map((step) => (
+                  <div key={step.num} className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{ background: step.bg, color: step.color }}>{step.num}</div>
+                    <div>
+                      <p className="text-sm font-medium">{step.title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>{step.desc}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ background: 'var(--amber-bg)', color: 'var(--amber-accent)' }}>2</div>
-                  <div>
-                    <p className="text-sm font-medium">A supervisor finds the gaps</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>
-                      Targeted questions expose what you think you know vs. what you actually know.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ background: 'var(--sage-bg)', color: 'var(--sage)' }}>3</div>
-                  <div>
-                    <p className="text-sm font-medium">You leave knowing exactly what to study next</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>
-                      A report card with mastered concepts, remaining gaps, and one sentence to remember.
-                    </p>
-                  </div>
-                </div>
+                ))}
                 <div className="mt-2 rounded-xl p-3 text-center"
                   style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
                   <p className="serif text-sm italic" style={{ color: 'var(--ink-muted)' }}>
-                    Based on the Oxbridge viva voce — the most effective method ever devised
-                    for testing whether someone truly understands something.
+                    Based on the Oxbridge viva voce — the gold standard for testing understanding.
                   </p>
                 </div>
               </div>
-            ) : (
+            </div>
+          )}
+
+          {/* Returning user pitch */}
+          {!isFirstTime && (
+            <div className="paper-card p-6 animate-stagger-2">
+              <div className="label-caps mb-2">The viva method</div>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
                 Explain a concept. Get challenged. Find out what you actually know.
                 Each session builds on the last.
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Learning patterns — only with 2+ sessions */}
           {patterns && patterns.count >= 2 && (
-            <div className="paper-card p-6">
+            <div className="paper-card p-6 animate-stagger-3">
               <div className="label-caps mb-3">Your learning patterns</div>
               <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl p-3 text-center"
-                  style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
-                  <div className="serif text-2xl font-semibold" style={{ color: 'var(--sage)' }}>
+                <div className="stat-reveal p-3 pt-5 text-center">
+                  <div className="serif text-2xl font-bold" style={{ color: 'var(--sage)' }}>
                     {patterns.totalMastered}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>mastered</div>
+                  <div className="text-xs mt-1 font-medium" style={{ color: 'var(--ink-muted)' }}>mastered</div>
                 </div>
-                <div className="rounded-xl p-3 text-center"
-                  style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
-                  <div className="serif text-2xl font-semibold" style={{ color: 'var(--amber-accent)' }}>
+                <div className="stat-reveal p-3 pt-5 text-center">
+                  <div className="serif text-2xl font-bold" style={{ color: 'var(--amber-accent)' }}>
                     {patterns.totalGaps}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>open gaps</div>
+                  <div className="text-xs mt-1 font-medium" style={{ color: 'var(--ink-muted)' }}>open gaps</div>
                 </div>
-                <div className="rounded-xl p-3 text-center"
-                  style={{ background: 'var(--white-glass)', border: '1px solid var(--rule)' }}>
-                  <div className="serif text-2xl font-semibold"
+                <div className="stat-reveal p-3 pt-5 text-center">
+                  <div className="serif text-2xl font-bold"
                     style={{ color: patterns.avgDelta >= 0 ? 'var(--sage)' : 'var(--oxblood)' }}>
                     {patterns.avgDelta >= 0 ? '+' : ''}{patterns.avgDelta}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>avg shift</div>
+                  <div className="text-xs mt-1 font-medium" style={{ color: 'var(--ink-muted)' }}>avg shift</div>
                 </div>
               </div>
               {patterns.insight && (
@@ -252,8 +269,8 @@ export default function SessionHistory({ onNewSession }) {
                 <p className="text-sm mt-1">Start your first viva — it takes 5 minutes.</p>
               </div>
             ) : (
-              sessions.map((s) => (
-                <SessionEntry key={s.id} session={s} />
+              sessions.map((s, i) => (
+                <SessionEntry key={s.id} session={s} index={i} />
               ))
             )}
           </div>
