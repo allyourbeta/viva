@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 
 export default function LearningCard({ onDone }) {
   const topic = useSessionStore((s) => s.topic);
-  const confidenceBefore = useSessionStore((s) => s.confidenceBefore);
   const learningCard = useSessionStore((s) => s.learningCard);
   const routingMode = useSessionStore((s) => s.routingMode);
   const routingRationale = useSessionStore((s) => s.routingRationale);
@@ -17,12 +16,10 @@ export default function LearningCard({ onDone }) {
   const recordingDuration = useSessionStore((s) => s.recordingDuration);
   const addSession = useSessionStore((s) => s.addSession);
   const analysis = useSessionStore((s) => s.analysis);
+  const confidenceBefore = useSessionStore((s) => s.confidenceBefore);
   const questions = useSessionStore((s) => s.questions);
 
   const [saved, setSaved] = useState(false);
-
-  // Staggered reveal for visual drama
-  const [showDelta, setShowDelta] = useState(true);
 
   useEffect(() => {
     if (saved) return;
@@ -42,7 +39,6 @@ export default function LearningCard({ onDone }) {
 
   const card = learningCard || {};
   const after = card.confidence_after;
-  const delta = typeof after === 'number' ? after - confidenceBefore : null;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -57,7 +53,7 @@ export default function LearningCard({ onDone }) {
               &ldquo;{card.one_thing_to_remember}&rdquo;
             </p>
             <div className="mt-5 text-sm opacity-50">
-              — from your tutorial on {topic}
+              — from your viva on {topic}
             </div>
           </div>
         </div>
@@ -76,43 +72,15 @@ export default function LearningCard({ onDone }) {
           </div>
         </div>
 
-        {/* ══ Confidence reveal ══ */}
+        {/* ══ Supervisor's assessment ══ */}
         <div className="rounded-2xl overflow-hidden mb-8 animate-stagger-1" style={{ border: '1px solid var(--rule)' }}>
-          <div className="grid grid-cols-3">
-            <div className="p-6 border-r" style={{ borderColor: 'var(--rule)', background: 'var(--white-glass)' }}>
-              <div className="label-caps">Before</div>
-              <div className="mt-2 serif text-4xl font-bold" style={{ color: 'var(--oxblood)' }}>
-                {confidenceBefore}
-              </div>
-            </div>
-            <div className="p-6 border-r" style={{ borderColor: 'var(--rule)', background: 'var(--white-glass)' }}>
-              <div className="label-caps">After</div>
-              <div className={`mt-2 serif text-4xl font-bold ${showDelta ? 'animate-count-up' : 'opacity-0'}`}
-                style={{ color: 'var(--sage)' }}>
-                {after ?? '?'}
-              </div>
-            </div>
-            <div className="p-6" style={{ background: 'var(--white-glass)' }}>
-              <div className="label-caps">Delta</div>
-              <div className={`mt-2 serif text-4xl font-bold ${showDelta ? 'animate-count-up' : 'opacity-0'}`}
-                style={{
-                  color: delta > 0 ? 'var(--sage)' : delta < 0 ? 'var(--oxblood)' : 'var(--ink-muted)',
-                  animationDelay: '0.2s',
-                }}>
-                {delta != null ? (delta > 0 ? `+${delta}` : delta) : '—'}
-              </div>
+          <div className="p-6 text-center" style={{ background: 'var(--white-glass)' }}>
+            <div className="label-caps mb-3">Supervisor&apos;s Assessment</div>
+            <div className="serif text-6xl font-bold animate-count-up"
+              style={{ color: typeof after === 'number' && after >= 6 ? 'var(--sage)' : 'var(--oxblood)' }}>
+              {after ?? '?'}<span className="text-2xl opacity-40">/10</span>
             </div>
           </div>
-          {delta != null && showDelta && (
-            <div className="px-6 py-3 text-sm border-t font-medium animate-fade-in"
-              style={{ background: 'var(--amber-bg)', borderColor: 'var(--rule)', color: 'var(--ink-muted)' }}>
-              {delta > 0
-                ? 'Your understanding deepened through the tutorial.'
-                : delta < 0
-                ? "Honest recalibration — you know more about what you don't know."
-                : 'Confidence held steady.'}
-            </div>
-          )}
         </div>
 
         {/* Two-column content */}

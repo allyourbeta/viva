@@ -97,7 +97,17 @@ export default function SessionHistory({ onNewSession }) {
   const [topicInput, setTopicInput] = useState('');
 
   useEffect(() => {
-    loadSessions().then((real) => setSessions(mergeWithDemoSessions(real)));
+    loadSessions().then((real) => {
+      const merged = mergeWithDemoSessions(real);
+      // Deduplicate by id (guards against double-loads from React strict mode)
+      const seen = new Set();
+      const unique = merged.filter((s) => {
+        if (seen.has(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      });
+      setSessions(unique);
+    });
   }, [setSessions]);
 
   const patterns = computePatterns(sessions);
@@ -107,7 +117,7 @@ export default function SessionHistory({ onNewSession }) {
     onNewSession();
     if (topic) {
       useSessionStore.getState().setTopic(topic);
-      useSessionStore.getState().setStep('confidence');
+      useSessionStore.getState().setStep('recording');
     }
   };
 

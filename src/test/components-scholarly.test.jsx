@@ -492,8 +492,8 @@ describe('LearningCard (scholarly report)', () => {
   });
 
   it('shows assessment score with /10 denominator', () => {
-    render(<LearningCard onDone={onDone} />);
-    expect(screen.getByText('/10')).toBeInTheDocument();
+    const { container } = render(<LearningCard onDone={onDone} />);
+    expect(container.textContent).toContain('/10');
   });
 
   it('assessment score is color-coded (sage for 6+, oxblood for below)', () => {
