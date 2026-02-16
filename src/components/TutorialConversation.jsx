@@ -4,13 +4,13 @@ import useSessionStore from '../store/sessionStore';
 import { getOpeningResponse, getFollowUpResponse, getClosingResponse, wrapUpTutorial } from '../api/tutorial';
 import { startListening, stopListening, speak } from '../services/speechService';
 import { startChunkedAnalysis, stopChunkedAnalysis, finishAnalysis } from '../services/chunkedAnalysis';
-import SessionDashboard from './SessionDashboard';
-import TranscriptEntry from './TranscriptEntry';
+import ExamChamber from './ExamChamber';
+import ArchitectureXRay from './ArchitectureXRay';
 
 // TranscriptEntry uses: supervisor-block, student-block, tutor-note, 'Supervisor', 'Student'
 
 const MAX_RESPONSE_SECONDS = 60;
-const MIN_ROUNDS = 2; // Minimum exchanges before closing (bump to 4-5 for production)
+const MIN_ROUNDS = 3; // Minimum exchanges before closing (bump to 4-5 for production)
 
 export default function TutorialConversation() {
   const topic = useSessionStore((s) => s.topic);
@@ -179,118 +179,28 @@ export default function TutorialConversation() {
   };
 
   return (
-    <div className="grid grid-cols-12 gap-6 min-h-[calc(100vh-120px)]">
-      {/* LEFT: Transcript */}
-      <section className="col-span-12 md:col-span-8 paper-card-elevated flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: 'var(--rule-light)' }}>
-          <div>
-            <div className="label-caps" style={{ color: 'var(--oxblood)' }}>Viva in progress</div>
-            <div className="serif font-semibold text-lg mt-0.5">{topic}</div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className="w-2.5 h-2.5 rounded-full transition-all duration-300"
-                  style={{
-                    background: n <= roundCount ? 'var(--gradient-indigo)' : 'var(--rule)',
-                    opacity: n <= roundCount ? 1 : 0.3,
-                    transform: n === roundCount ? 'scale(1.3)' : 'scale(1)',
-                  }} />
-              ))}
-            </div>
-            <div className="mono text-sm" style={{ color: 'var(--ink-muted)' }}>
-              <span>{Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, '0')}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {displayItems.map((item, i) => (
-            <TranscriptEntry key={i} role={item.role} text={item.text} thinking={item.thinking} />
-          ))}
-
-          {isLoading && !isFinishing && (
-            <div className="grid grid-cols-[90px_1fr] gap-5 animate-fade-in">
-              <div className="label-caps pt-1.5" style={{ color: 'var(--indigo)' }}>Supervisor</div>
-              <div className="supervisor-block p-4">
-                <div className="flex gap-2"><span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" /></div>
-              </div>
-            </div>)}
-          {isFinishing && (
-            <div className="text-center py-8 animate-fade-in">
-              <div className="label-caps mb-2">Preparing report</div>
-              <p className="serif text-lg" style={{ color: 'var(--ink-muted)' }}>Reviewing the full conversation...</p>
-              <div className="mt-4 w-48 mx-auto h-1.5 rounded-full animate-shimmer" />
-            </div>)}
-          <div ref={scrollRef} />
-        </div>
-
-        {/* Input area */}
-        {!isLoading && !isFinishing && (
-          <div className="border-t px-6 py-6" style={{ borderColor: 'var(--rule-light)' }}>
-            {currentAnswer ? (
-              <div className="w-full rounded-xl border px-4 py-3 text-sm mb-4"
-                style={{ borderColor: 'var(--rule)', background: 'var(--panel)' }}>{currentAnswer}</div>
-            ) : !isRecording && (
-              <p className="text-base text-center mb-4 font-medium" style={{ color: 'var(--ink-muted)' }}>
-                Respond. Be precise.
-              </p>
-            )}
-
-            {isRecording && (
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <span className="w-2.5 h-2.5 rounded-full animate-pulse-record" style={{ background: 'var(--oxblood)' }} />
-                <span className="mono text-lg font-medium" style={{ color: 'var(--oxblood)' }}>
-                  {Math.floor(responseElapsed / 60)}:{(responseElapsed % 60).toString().padStart(2, '0')}
-                </span>
-                <span className="text-xs font-medium" style={{ color: MAX_RESPONSE_SECONDS - responseElapsed <= 10 ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
-                  {MAX_RESPONSE_SECONDS - responseElapsed}s left
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-center justify-center gap-4">
-              {!isRecording && currentAnswer.trim() ? (
-                <button onClick={() => handleSubmitAnswer((answerRef.current || currentAnswer).trim())}
-                  className="record-btn w-16 h-16">
-                  <ArrowRight className="w-7 h-7" />
-                </button>
-              ) : (
-                <button onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  className={`record-btn w-16 h-16 ${isRecording ? 'record-btn--active' : ''}`}>
-                  {isRecording ? <Square className="w-7 h-7 fill-white" /> : <Mic className="w-7 h-7" />}
-                </button>
-              )}
-            </div>
-
-            <div className="text-center mt-3">
-              <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-                {isRecording ? 'Click to stop' : currentAnswer.trim() ? 'Click to submit' : 'Press R or click to record'}
-              </span>
-              {roundCount >= MIN_ROUNDS && !isRecording && (
-                <button onClick={() => handleFinish()} className="block mx-auto mt-2 text-xs font-medium"
-                  style={{ color: 'var(--indigo)' }}>
-                  End tutorial & see report →
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* RIGHT: Dashboard */}
-      <aside className="hidden md:flex md:col-span-4 flex-col gap-4">
-        <SessionDashboard
-          topic={topic}
-          confidenceBefore={confidenceBefore}
-          currentMode={currentMode}
-          assessments={assessments}
-          roundCount={roundCount}
-          elapsed={elapsed}
-        />
-      </aside>
-    </div>
+    <>
+      <ExamChamber
+        topic={topic}
+        displayItems={displayItems}
+        assessments={assessments}
+        currentMode={currentMode}
+        roundCount={roundCount}
+        elapsed={elapsed}
+        confidenceBefore={confidenceBefore}
+        isLoading={isLoading}
+        isFinishing={isFinishing}
+        isRecording={isRecording}
+        currentAnswer={currentAnswer}
+        responseElapsed={responseElapsed}
+        maxResponseSeconds={MAX_RESPONSE_SECONDS}
+        onStartRecording={handleStartRecording}
+        onStopRecording={handleStopRecording}
+        onSubmitAnswer={() => handleSubmitAnswer((answerRef.current || currentAnswer).trim())}
+        onFinish={() => handleFinish()}
+        minRounds={MIN_ROUNDS}
+      />
+      <ArchitectureXRay />
+    </>
   );
 }

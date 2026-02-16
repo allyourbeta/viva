@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { emit } from '../services/telemetry';
 import {
   TUTORIAL_SYSTEM_PROMPT,
   buildOpeningMessages,
@@ -30,6 +31,7 @@ function extractJSON(response) {
 export async function getOpeningResponse(sourceText, transcript, confidenceBefore) {
   console.log('[Viva Tutorial] Opening move...');
   const start = Date.now();
+  emit('api_call', { endpoint: 'opening', model: MODEL });
 
   const response = await client.messages.create({
     model: MODEL,
@@ -38,8 +40,14 @@ export async function getOpeningResponse(sourceText, transcript, confidenceBefor
     messages: buildOpeningMessages(sourceText, transcript, confidenceBefore),
   });
 
-  console.log(`[Viva Tutorial] Opening in ${((Date.now() - start) / 1000).toFixed(1)}s`);
-  return extractJSON(response);
+  const ms = Date.now() - start;
+  console.log(`[Viva Tutorial] Opening in ${(ms / 1000).toFixed(1)}s`);
+  const result = extractJSON(response);
+  emit('api_complete', { endpoint: 'opening', ms, model: MODEL });
+  if (result.internal_assessment) {
+    emit('assessment', { assessment: result.internal_assessment, endpoint: 'opening' });
+  }
+  return result;
 }
 
 /**
@@ -49,6 +57,7 @@ export async function getOpeningResponse(sourceText, transcript, confidenceBefor
 export async function getFollowUpResponse(conversationHistory, sourceText) {
   console.log(`[Viva Tutorial] Follow-up (${conversationHistory.length} messages)...`);
   const start = Date.now();
+  emit('api_call', { endpoint: 'followup', model: MODEL, messageCount: conversationHistory.length });
 
   const response = await client.messages.create({
     model: MODEL,
@@ -57,8 +66,14 @@ export async function getFollowUpResponse(conversationHistory, sourceText) {
     messages: conversationHistory,
   });
 
-  console.log(`[Viva Tutorial] Follow-up in ${((Date.now() - start) / 1000).toFixed(1)}s`);
-  return extractJSON(response);
+  const ms = Date.now() - start;
+  console.log(`[Viva Tutorial] Follow-up in ${(ms / 1000).toFixed(1)}s`);
+  const result = extractJSON(response);
+  emit('api_complete', { endpoint: 'followup', ms, model: MODEL });
+  if (result.internal_assessment) {
+    emit('assessment', { assessment: result.internal_assessment, endpoint: 'followup' });
+  }
+  return result;
 }
 
 /**
@@ -68,6 +83,7 @@ export async function getFollowUpResponse(conversationHistory, sourceText) {
 export async function getClosingResponse(conversationHistory, sourceText) {
   console.log('[Viva Tutorial] Closing move...');
   const start = Date.now();
+  emit('api_call', { endpoint: 'closing', model: MODEL });
 
   const response = await client.messages.create({
     model: MODEL,
@@ -76,8 +92,14 @@ export async function getClosingResponse(conversationHistory, sourceText) {
     messages: conversationHistory,
   });
 
-  console.log(`[Viva Tutorial] Closing in ${((Date.now() - start) / 1000).toFixed(1)}s`);
-  return extractJSON(response);
+  const ms = Date.now() - start;
+  console.log(`[Viva Tutorial] Closing in ${(ms / 1000).toFixed(1)}s`);
+  const result = extractJSON(response);
+  emit('api_complete', { endpoint: 'closing', ms, model: MODEL });
+  if (result.internal_assessment) {
+    emit('assessment', { assessment: result.internal_assessment, endpoint: 'closing' });
+  }
+  return result;
 }
 
 /**
@@ -86,6 +108,7 @@ export async function getClosingResponse(conversationHistory, sourceText) {
 export async function wrapUpTutorial(conversationHistory, topic, confidenceBefore) {
   console.log('[Viva Tutorial] Generating learning card...');
   const start = Date.now();
+  emit('api_call', { endpoint: 'wrapup', model: MODEL });
 
   const fullContext = conversationHistory.map((m) =>
     `${m.role === 'user' ? 'Student' : 'Supervisor'}: ${m.content}`
@@ -101,6 +124,9 @@ export async function wrapUpTutorial(conversationHistory, topic, confidenceBefor
     }],
   });
 
-  console.log(`[Viva Tutorial] Card in ${((Date.now() - start) / 1000).toFixed(1)}s`);
-  return extractJSON(response);
+  const ms = Date.now() - start;
+  console.log(`[Viva Tutorial] Card in ${(ms / 1000).toFixed(1)}s`);
+  const result = extractJSON(response);
+  emit('api_complete', { endpoint: 'wrapup', ms, model: MODEL });
+  return result;
 }

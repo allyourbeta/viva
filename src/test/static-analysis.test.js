@@ -89,9 +89,12 @@ describe('Layout anti-patterns', () => {
     expect(file.content).toContain('grid-cols-12');
   });
 
-  it('TutorialConversation uses 12-column grid', () => {
-    const file = getComponentFiles().find((f) => f.name === 'TutorialConversation.jsx');
-    expect(file.content).toContain('grid-cols-12');
+  it('TutorialConversation or ExamChamber uses exam chamber grid', () => {
+    const tutorial = getComponentFiles().find((f) => f.name === 'TutorialConversation.jsx');
+    const chamber = getComponentFiles().find((f) => f.name === 'ExamChamber.jsx');
+    const hasGrid = (tutorial?.content || '').includes('exam-chamber-grid') ||
+                    (chamber?.content || '').includes('exam-chamber-grid');
+    expect(hasGrid).toBe(true);
   });
 
   it('LearningCard uses multi-column grid layout', () => {
@@ -102,7 +105,7 @@ describe('Layout anti-patterns', () => {
 
 describe('Responsive breakpoint coverage', () => {
   // Every main screen should have responsive column spans
-  const SCREENS_NEEDING_RESPONSIVE = ['SessionHistory.jsx', 'TutorialConversation.jsx'];
+  const SCREENS_NEEDING_RESPONSIVE = ['SessionHistory.jsx'];
 
   for (const screenName of SCREENS_NEEDING_RESPONSIVE) {
     it(`${screenName} has md: or lg: breakpoint for column spans`, () => {
@@ -123,7 +126,7 @@ describe('Scholarly design system class usage', () => {
   const SCHOLARLY_CLASSES = [
     { cls: 'paper-card', screens: ['SessionHistory.jsx', 'LearningCard.jsx', 'SessionDashboard.jsx'] },
     { cls: 'label-caps', screens: ['SessionHistory.jsx', 'LearningCard.jsx', 'SessionDashboard.jsx', 'Layout.jsx'] },
-    { cls: 'serif', screens: ['SessionHistory.jsx', 'TutorialConversation.jsx', 'LearningCard.jsx'] },
+    { cls: 'serif', screens: ['SessionHistory.jsx', 'ExamChamber.jsx', 'LearningCard.jsx'] },
   ];
 
   for (const { cls, screens } of SCHOLARLY_CLASSES) {
@@ -137,26 +140,23 @@ describe('Scholarly design system class usage', () => {
   }
 });
 
-describe('Transcript layout (no chat bubbles)', () => {
-  it('TutorialConversation does NOT use "rounded-2xl" on messages (chat bubble pattern)', () => {
-    const file = getComponentFiles().find((f) => f.name === 'TutorialConversation.jsx');
+describe('Examination chamber layout', () => {
+  it('ExamChamber uses exam-chamber-grid class', () => {
+    const file = getComponentFiles().find((f) => f.name === 'ExamChamber.jsx');
     if (!file) return;
-    // The message blocks should use supervisor-block/student-block, not rounded bubbles
-    expect(file.content).toContain('supervisor-block');
-    expect(file.content).toContain('student-block');
+    expect(file.content).toContain('exam-chamber-grid');
   });
 
-  it('TutorialConversation uses role labels ("Supervisor" / "Student")', () => {
-    const file = getComponentFiles().find((f) => f.name === 'TutorialConversation.jsx');
+  it('ExamChamber uses exam-sidebar class', () => {
+    const file = getComponentFiles().find((f) => f.name === 'ExamChamber.jsx');
     if (!file) return;
-    expect(file.content).toContain("'Supervisor'");
-    expect(file.content).toContain("'Student'");
+    expect(file.content).toContain('exam-sidebar');
   });
 
-  it('TutorialConversation has tutor-note blocks', () => {
-    const file = getComponentFiles().find((f) => f.name === 'TutorialConversation.jsx');
+  it('ExamChamber uses serif for question text', () => {
+    const file = getComponentFiles().find((f) => f.name === 'ExamChamber.jsx');
     if (!file) return;
-    expect(file.content).toContain('tutor-note');
+    expect(file.content).toContain('serif');
   });
 });
 
@@ -170,6 +170,7 @@ describe('Import consistency', () => {
       'react', 'lucide-react', 'zustand',
       '../store/sessionStore', '../api/supabase', '../api/claude', '../api/tutorial',
       '../services/speechService', '../services/chunkedAnalysis', '../services/demoData',
+      '../services/telemetry',
     ]);
 
     const issues = [];

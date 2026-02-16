@@ -1,17 +1,20 @@
 import useSessionStore from '../store/sessionStore';
 
 const SUBTITLES = {
-  source: 'Tutorial Ledger',
-  confidence: 'Tutorial Ledger',
-  recording: 'Tutorial Ledger',
-  tutorial: 'Live Tutorial',
+  source: 'Defense Ledger',
+  confidence: 'Defense Ledger',
+  recording: 'Defense Ledger',
+  tutorial: 'Live Examination',
   card: 'Session Report',
 };
 
+// Steps that use the full-bleed dark session style
+const SESSION_STEPS = ['source', 'confidence', 'recording', 'tutorial', 'card'];
+
 export default function Layout({ children }) {
   const step = useSessionStore((s) => s.step);
-  const isTutorial = step === 'tutorial';
-  const subtitle = SUBTITLES[step] || 'Tutorial Ledger';
+  const isSession = SESSION_STEPS.includes(step);
+  const subtitle = SUBTITLES[step] || 'Defense Ledger';
 
   return (
     <div className="min-h-screen">
@@ -35,10 +38,10 @@ export default function Layout({ children }) {
           </div>
         </div>
         <div className="text-xs font-medium tracking-wide" style={{ color: 'var(--ink-faint)' }}>
-          Explain it. Defend it. Know it.
+          Defend what you claim to know.
         </div>
       </header>
-      <main className={`mx-auto px-8 py-6 ${isTutorial ? 'max-w-[1400px]' : 'max-w-6xl'}`}>
+      <main className={isSession ? 'px-6 py-4' : 'mx-auto max-w-6xl px-8 py-6'}>
         {children}
       </main>
     </div>

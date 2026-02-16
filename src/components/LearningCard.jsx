@@ -41,7 +41,7 @@ export default function LearningCard({ onDone }) {
   const after = card.confidence_after;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       {/* ══════ HERO: One thing to remember ══════ */}
       {card.one_thing_to_remember && (
         <div className="hero-gradient rounded-2xl p-8 md:p-10 text-center mb-8 animate-scale-in">

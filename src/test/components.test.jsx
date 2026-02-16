@@ -102,7 +102,7 @@ describe('Component Smoke Tests', () => {
 
   it('SourceInput renders topic field and modes', () => {
     render(<SourceInput />);
-    expect(screen.getByText('What are you learning?')).toBeInTheDocument();
+    expect(screen.getByText('What will you defend?')).toBeInTheDocument();
     expect(screen.getByText('Just a topic')).toBeInTheDocument();
     expect(screen.getByText('URL')).toBeInTheDocument();
     expect(screen.getByText('Paste text')).toBeInTheDocument();

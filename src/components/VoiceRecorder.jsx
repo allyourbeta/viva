@@ -117,116 +117,119 @@ export default function VoiceRecorder() {
   const progress = elapsed / MAX_RECORDING_SECONDS;
 
   return (
-    <div className="max-w-3xl mx-auto animate-fade-in">
-      {/* ── Header ── */}
-      <div className="text-center mb-10">
-        <div className="label-caps mb-2">Your turn</div>
-        <h2 className="serif text-4xl font-bold tracking-tight">
-          Explain: <span style={{ color: 'var(--indigo)' }}>{topic}</span>
-        </h2>
-        <p className="text-base mt-3" style={{ color: 'var(--ink-muted)' }}>
-          Talk through what you know in under a minute. Be messy — that's the point.
-        </p>
-      </div>
+    <div className="session-panel animate-fade-in">
+      <div className="session-panel-inner">
+        {/* ── Header ── */}
+        <div className="text-center mb-10">
+          <div className="label-caps mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>Your turn</div>
+          <h2 className="serif text-3xl md:text-4xl font-bold tracking-tight" style={{ color: '#f0ecff' }}>
+            Explain: <span style={{ color: '#c4b5fd' }}>{topic}</span>
+          </h2>
+          <p className="text-base mt-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Talk through what you know in under a minute. Be messy — that's the point.
+          </p>
+        </div>
 
-      {!showTextFallback ? (
-        <div className="flex flex-col items-center gap-8">
-          {/* ── Record button with animated ring ── */}
-          <div className="relative">
-            {isRecording && (
-              <>
-                <div className="animate-ring-pulse" />
-                <div className="animate-ring-pulse" style={{ animationDelay: '0.6s' }} />
-              </>
-            )}
-            <button
-              onClick={isRecording ? handleStopRecording : handleStartRecording}
-              className={`record-btn w-32 h-32 ${isRecording ? 'record-btn--active' : ''}`}
-            >
-              {isRecording
-                ? <Square className="w-12 h-12 fill-white" />
-                : <Mic className="w-12 h-12" />}
-            </button>
-          </div>
-
-          {/* ── Timer with progress arc ── */}
-          <div className="text-center">
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="mono text-4xl font-medium"
-                style={{ color: isRecording ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
-                {formatTime(elapsed)}
-              </span>
-              <span className="text-sm" style={{ color: 'var(--ink-faint)' }}> / 1:00</span>
+        {!showTextFallback ? (
+          <div className="flex flex-col items-center gap-8">
+            {/* ── Record button with animated ring ── */}
+            <div className="relative">
+              {isRecording && (
+                <>
+                  <div className="animate-ring-pulse" />
+                  <div className="animate-ring-pulse" style={{ animationDelay: '0.6s' }} />
+                </>
+              )}
+              <button
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                className={`record-btn w-32 h-32 ${isRecording ? 'record-btn--active' : ''}`}
+              >
+                {isRecording
+                  ? <Square className="w-12 h-12 fill-white" />
+                  : <Mic className="w-12 h-12" />}
+              </button>
             </div>
-            {isRecording && (
-              <div className="mt-3 w-64 mx-auto">
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--rule)' }}>
-                  <div className="h-full rounded-full transition-all duration-1000 ease-linear"
-                    style={{
-                      width: `${progress * 100}%`,
-                      background: remaining <= 10 ? 'var(--gradient-oxblood)' : 'var(--gradient-indigo)',
-                    }} />
+
+            {/* ── Timer with progress arc ── */}
+            <div className="text-center">
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="mono text-4xl font-medium"
+                  style={{ color: isRecording ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                  {formatTime(elapsed)}
+                </span>
+                <span className="text-sm" style={{ color: 'rgba(255,255,255,0.25)' }}> / 1:00</span>
+              </div>
+              {isRecording && (
+                <div className="mt-3 w-64 mx-auto">
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                    <div className="h-full rounded-full transition-all duration-1000 ease-linear"
+                      style={{
+                        width: `${progress * 100}%`,
+                        background: remaining <= 10 ? 'var(--gradient-oxblood)' : 'var(--gradient-indigo)',
+                      }} />
+                  </div>
+                  <p className="text-xs mt-1.5 font-medium"
+                    style={{ color: remaining <= 10 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                    {remaining}s remaining
+                  </p>
                 </div>
-                <p className="text-xs mt-1.5 font-medium"
-                  style={{ color: remaining <= 10 ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
-                  {remaining}s remaining
+              )}
+              {!isRecording && !interimText && (
+                <p className="text-sm mt-2" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                  Click to start recording
                 </p>
+              )}
+            </div>
+
+            {/* Background analysis indicator */}
+            {isRecording && bgAnalysisCount > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full animate-fade-in"
+                style={{ background: 'rgba(167,139,250,0.1)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.2)' }}>
+                <Clock className="w-4 h-4" />
+                <span className="text-sm font-medium">Examiner is already listening...</span>
               </div>
             )}
-            {!isRecording && !interimText && (
-              <p className="text-sm mt-2" style={{ color: 'var(--ink-faint)' }}>
-                Click to start recording
-              </p>
+
+            {/* Live transcript */}
+            {interimText && (
+              <div className="w-full rounded-xl p-5 text-base leading-relaxed animate-fade-in"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
+                {interimText}
+              </div>
+            )}
+
+            {/* Mic fallback */}
+            {!isRecording && (
+              <button onClick={() => setShowTextFallback(true)}
+                className="text-sm flex items-center gap-1 transition-opacity hover:opacity-70"
+                style={{ color: 'rgba(255,255,255,0.25)' }}>
+                <Keyboard className="w-4 h-4" /> Having mic issues? Type instead
+              </button>
             )}
           </div>
-
-          {/* Background analysis indicator */}
-          {isRecording && bgAnalysisCount > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full animate-fade-in"
-              style={{ background: 'var(--indigo-bg)', color: 'var(--indigo)' }}>
-              <Clock className="w-4 h-4" />
-              <span className="text-sm font-medium">Supervisor is already listening...</span>
-            </div>
-          )}
-
-          {/* Live transcript */}
-          {interimText && (
-            <div className="w-full paper-card p-5 text-base leading-relaxed animate-fade-in"
-              style={{ color: 'var(--ink-muted)' }}>
-              {interimText}
-            </div>
-          )}
-
-          {/* Mic fallback */}
-          {!isRecording && (
-            <button onClick={() => setShowTextFallback(true)}
-              className="text-sm flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: 'var(--ink-faint)' }}>
-              <Keyboard className="w-4 h-4" /> Having mic issues? Type instead
+        ) : (
+          <div className="space-y-3">
+            <textarea value={textInput} onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Type your explanation here..." rows={6}
+              className="session-input resize-none"
+              style={{ minHeight: 160 }}
+              autoFocus />
+            <button onClick={() => setShowTextFallback(false)}
+              className="text-sm flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <Mic className="w-4 h-4" /> Switch back to voice
             </button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <textarea value={textInput} onChange={(e) => setTextInput(e.target.value)}
-            placeholder="Type your explanation here..." rows={6}
-            className="w-full px-5 py-4 rounded-xl text-base resize-none"
-            style={{ border: '1px solid var(--rule)', background: 'var(--surface)', color: 'var(--ink)' }}
-            autoFocus />
-          <button onClick={() => setShowTextFallback(false)}
-            className="text-sm flex items-center gap-1" style={{ color: 'var(--ink-faint)' }}>
-            <Mic className="w-4 h-4" /> Switch back to voice
-          </button>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Text fallback submit */}
-      {!isRecording && showTextFallback && textInput.trim() && (
-        <button onClick={handleSubmit}
-          className="w-full mt-4 py-4 rounded-xl text-white text-lg font-semibold transition-all hover:scale-[1.01]"
-          style={{ background: 'var(--gradient-indigo)', boxShadow: 'var(--glow-indigo)' }}>
-          Submit to Your Supervisor <ArrowRight className="w-5 h-5 inline ml-2" />
-        </button>
-      )}
+        {/* Text fallback submit */}
+        {!isRecording && showTextFallback && textInput.trim() && (
+          <button onClick={handleSubmit}
+            className="w-full mt-4 py-4 rounded-xl text-white text-lg font-semibold transition-all hover:scale-[1.01]"
+            style={{ background: 'var(--gradient-indigo)', boxShadow: 'var(--glow-indigo)' }}>
+            Submit to Examiner <ArrowRight className="w-5 h-5 inline ml-2" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

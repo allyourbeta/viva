@@ -8,6 +8,8 @@
  * we either use the latest completed result or fire one final call.
  */
 
+import { emit } from './telemetry';
+
 const CHUNK_INTERVAL = 5_000; // 5 seconds
 
 let intervalId = null;
@@ -39,6 +41,7 @@ export function startChunkedAnalysis({ apiFn, getTranscript }) {
     const currentLength = transcript.length;
 
     console.log(`[Viva Chunked] Background #${callNum} (${currentLength} chars)`);
+    emit('chunk_start', { callNum, chars: currentLength });
 
     try {
       pendingCall = activeFn(transcript);
@@ -48,9 +51,11 @@ export function startChunkedAnalysis({ apiFn, getTranscript }) {
         latestResult = result;
         latestTranscriptLength = currentLength;
         console.log(`[Viva Chunked] Background #${callNum} complete`);
+        emit('chunk_complete', { callNum, chars: currentLength });
       }
     } catch (err) {
       console.warn(`[Viva Chunked] Background #${callNum} failed:`, err.message);
+      emit('chunk_error', { callNum, error: err.message });
     }
   }, CHUNK_INTERVAL);
 }
@@ -79,6 +84,7 @@ export async function finishAnalysis({ freshFn, finalTranscript }) {
 
   if (latestResult && growthRatio < 0.3) {
     console.log('[Viva Chunked] Using cached result (fast path!)');
+    emit('chunk_cached', { newChars, growthPercent: Math.round(growthRatio * 100) });
     return latestResult;
   }
 

@@ -166,13 +166,13 @@ describe('Layout (scholarly header)', () => {
   it('shows "Tutorial Ledger" when on home screen', () => {
     mockStoreState = createMockStore({ step: 'source' });
     render(<Layout><div>child</div></Layout>);
-    expect(screen.getByText('Tutorial Ledger')).toBeInTheDocument();
+    expect(screen.getByText('Defense Ledger')).toBeInTheDocument();
   });
 
   it('shows "Live Tutorial" when in tutorial', () => {
     mockStoreState = createMockStore({ step: 'tutorial' });
     render(<Layout><div>child</div></Layout>);
-    expect(screen.getByText('Live Tutorial')).toBeInTheDocument();
+    expect(screen.getByText('Live Examination')).toBeInTheDocument();
   });
 
   it('shows "Session Report" when on card', () => {
@@ -183,7 +183,7 @@ describe('Layout (scholarly header)', () => {
 
   it('header shows tagline', () => {
     render(<Layout><div>child</div></Layout>);
-    expect(screen.getByText('Explain it. Defend it. Know it.')).toBeInTheDocument();
+    expect(screen.getByText('Defend what you claim to know.')).toBeInTheDocument();
   });
 
   it('header uses label-caps class for the brand label', () => {
@@ -194,7 +194,7 @@ describe('Layout (scholarly header)', () => {
 
   it('header uses serif class for the subtitle', () => {
     render(<Layout><div>child</div></Layout>);
-    const subtitle = screen.getByText('Tutorial Ledger');
+    const subtitle = screen.getByText('Defense Ledger');
     expect(subtitle.className).toContain('serif');
   });
 
@@ -203,19 +203,18 @@ describe('Layout (scholarly header)', () => {
     expect(screen.getByTestId('child')).toBeInTheDocument();
   });
 
-  it('main has max-w-6xl for non-tutorial (1152px wide, not narrow column)', () => {
+  it('main has full-width for session steps (no narrow max-width)', () => {
     const { container } = render(<Layout><div>content</div></Layout>);
     const main = container.querySelector('main');
-    expect(main.className).toContain('max-w-6xl');
-    // Should NOT have max-w-xl or max-w-2xl (the "narrow column" anti-pattern)
+    // Session steps should NOT have narrow max-widths
     expect(main.className).not.toMatch(/max-w-(xl|2xl|lg|md|sm)\b/);
   });
 
-  it('main has max-w-[1400px] for tutorial screen', () => {
+  it('main has px-6 for tutorial screen', () => {
     mockStoreState = createMockStore({ step: 'tutorial' });
     const { container } = render(<Layout><div>content</div></Layout>);
     const main = container.querySelector('main');
-    expect(main.className).toContain('max-w-[1400px]');
+    expect(main.className).toContain('px-6');
   });
 });
 
@@ -459,10 +458,10 @@ describe('LearningCard (scholarly report)', () => {
     onDone.mockClear();
   });
 
-  it('wraps in max-w-4xl (wide but centered)', () => {
+  it('wraps in max-w-5xl (wide but centered)', () => {
     const { container } = render(<LearningCard onDone={onDone} />);
     const wrapper = container.firstChild;
-    expect(wrapper.className).toContain('max-w-4xl');
+    expect(wrapper.className).toContain('max-w-5xl');
     // Should NOT be narrow
     expect(wrapper.className).not.toMatch(/max-w-(xl|2xl|lg|md|sm)\b/);
   });

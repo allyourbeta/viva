@@ -47,80 +47,85 @@ export default function SourceInput() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-serif font-bold text-warm-900 mb-1">
-          What are you learning?
-        </h2>
-        <p className="text-sm text-warm-500">
-          Name the topic, then optionally provide source material for your supervisor to evaluate against.
-        </p>
-      </div>
-
-      {/* Topic input */}
-      <div>
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">Topic</label>
-        <input
-          type="text"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          placeholder="e.g., React useEffect hook, database indexing, photosynthesis..."
-          className="w-full px-4 py-3 rounded-xl border border-warm-200 bg-white text-warm-900 placeholder:text-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors"
-          autoFocus
-        />
-      </div>
-
-      {/* Source mode selector */}
-      <div>
-        <label className="block text-sm font-medium text-warm-700 mb-2">Source material</label>
-        <div className="grid grid-cols-3 gap-2">
-          {modes.map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setMode(m.key)}
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${
-                mode === m.key
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-warm-200 bg-white text-warm-500 hover:border-warm-300'
-              }`}
-            >
-              <m.icon className="w-4 h-4" />
-              <span className="text-xs font-medium">{m.label}</span>
-              <span className="text-[10px] opacity-60">{m.desc}</span>
-            </button>
-          ))}
+    <div className="session-panel animate-fade-in">
+      <div className="session-panel-inner">
+        <div className="text-center mb-8">
+          <div className="label-caps mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>Choose your subject</div>
+          <h2 className="serif text-3xl md:text-4xl font-bold tracking-tight" style={{ color: '#f0ecff' }}>
+            What will you defend?
+          </h2>
+          <p className="text-base mt-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Name the topic, then optionally provide source material.
+          </p>
         </div>
+
+        {/* Topic input */}
+        <div className="mb-6">
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g., React useEffect hook, database indexing, photosynthesis..."
+            className="session-input"
+            autoFocus
+          />
+        </div>
+
+        {/* Source mode selector */}
+        <div className="mb-6">
+          <div className="text-xs font-medium mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Source material</div>
+          <div className="grid grid-cols-3 gap-2">
+            {modes.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setMode(m.key)}
+                className="flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all"
+                style={{
+                  borderColor: mode === m.key ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.1)',
+                  background: mode === m.key ? 'rgba(167,139,250,0.1)' : 'rgba(255,255,255,0.03)',
+                  color: mode === m.key ? '#c4b5fd' : 'rgba(255,255,255,0.4)',
+                }}
+              >
+                <m.icon className="w-4 h-4" />
+                <span className="text-xs font-medium">{m.label}</span>
+                <span className="text-[10px] opacity-60">{m.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Conditional input based on mode */}
+        {mode === 'url' && (
+          <input
+            type="url"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="https://react.dev/reference/react/useEffect"
+            className="session-input mb-6"
+          />
+        )}
+
+        {mode === 'paste' && (
+          <textarea
+            value={pasteInput}
+            onChange={(e) => setPasteInput(e.target.value)}
+            placeholder="Paste your notes, textbook excerpt, or any reference material..."
+            rows={4}
+            className="session-input mb-6 resize-none"
+            style={{ minHeight: 120 }}
+          />
+        )}
+
+        {/* Next button */}
+        <button
+          onClick={handleNext}
+          disabled={!canProceed || isLoading}
+          className="w-full py-4 rounded-xl text-white text-lg font-semibold transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40"
+          style={{ background: 'var(--gradient-indigo)', boxShadow: 'var(--glow-indigo)' }}
+        >
+          {isLoading ? 'Finding sources...' : 'Begin Self-Assessment →'}
+        </button>
       </div>
-
-      {/* Conditional input based on mode */}
-      {mode === 'url' && (
-        <input
-          type="url"
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          placeholder="https://react.dev/reference/react/useEffect"
-          className="w-full px-4 py-3 rounded-xl border border-warm-200 bg-white text-warm-900 placeholder:text-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors"
-        />
-      )}
-
-      {mode === 'paste' && (
-        <textarea
-          value={pasteInput}
-          onChange={(e) => setPasteInput(e.target.value)}
-          placeholder="Paste your notes, textbook excerpt, or any reference material..."
-          rows={5}
-          className="w-full px-4 py-3 rounded-xl border border-warm-200 bg-white text-warm-900 placeholder:text-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors resize-none"
-        />
-      )}
-
-      {/* Next button */}
-      <button
-        onClick={handleNext}
-        disabled={!canProceed || isLoading}
-        className="w-full py-3 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-warm-200 disabled:text-warm-400 text-white font-semibold transition-colors"
-      >
-        {isLoading ? 'Finding sources...' : 'Next — Self-Assessment'}
-      </button>
     </div>
   );
 }
