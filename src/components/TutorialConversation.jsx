@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, Square, ArrowRight } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
 import { getOpeningResponse, getFollowUpResponse, wrapUpTutorial } from '../api/tutorial';
@@ -6,11 +6,10 @@ import { startListening, stopListening, speak } from '../services/speechService'
 import SessionDashboard from './SessionDashboard';
 
 /* ── Transcript-style message (NOT a chat bubble) ── */
-function TranscriptEntry({ role, text, thinking, isNew }) {
+function TranscriptEntry({ role, text, thinking }) {
   const isSupervisor = role === 'supervisor';
   return (
-    <div className={`animate-fade-in ${isNew ? '' : ''}`}>
-      {/* Tutor thinking note — appears BEFORE supervisor messages */}
+    <div className="animate-fade-in">
       {thinking && isSupervisor && (
         <div className="tutor-note px-4 py-3 mb-3">
           <div className="flex items-center gap-2 mb-1">
@@ -21,21 +20,13 @@ function TranscriptEntry({ role, text, thinking, isNew }) {
               : 'Probing your understanding'
             }</div>
           </div>
-          <p className="text-sm text-[var(--ink-muted)] leading-relaxed">
-            {thinking.key_weakness_targeted}
-          </p>
+          <p className="text-sm text-[var(--ink-muted)] leading-relaxed">{thinking.key_weakness_targeted}</p>
         </div>
       )}
-
-      {/* The actual message */}
       <div className="grid grid-cols-[100px_1fr] gap-4">
-        <div className="label-caps pt-1.5">
-          {isSupervisor ? 'Supervisor' : 'Student'}
-        </div>
+        <div className="label-caps pt-1.5">{isSupervisor ? 'Supervisor' : 'Student'}</div>
         <div className={isSupervisor ? 'supervisor-block p-4' : 'student-block p-4'}>
-          <p className={`leading-relaxed ${isSupervisor ? 'serif text-base' : 'text-sm'}`}>
-            {text}
-          </p>
+          <p className={`leading-relaxed ${isSupervisor ? 'serif text-base' : 'text-sm'}`}>{text}</p>
         </div>
       </div>
     </div>
@@ -69,19 +60,33 @@ export default function TutorialConversation() {
     return () => clearInterval(t);
   }, []);
 
+  // R key shortcut for record/stop/submit
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        if (isLoading || isFinishing) return;
+        if (!isRecording && currentAnswer.trim()) {
+          handleSubmitAnswer((answerRef.current || currentAnswer).trim());
+        } else if (isRecording) {
+          handleStopRecording();
+        } else {
+          handleStartRecording();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isRecording, isLoading, isFinishing, currentAnswer]);
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayItems, isLoading]);
 
-  const addSupervisorResponse = (text, assessment, prevMode) => {
-    setDisplayItems((prev) => [
-      ...prev,
-      { type: 'message', role: 'supervisor', text, thinking: assessment },
-    ]);
-    if (assessment) {
-      setAssessments((prev) => [...prev, assessment]);
-      if (assessment.mode) setCurrentMode(assessment.mode);
-    }
+  const addSupervisorResponse = (text, assessment) => {
+    setDisplayItems((prev) => [...prev, { type: 'message', role: 'supervisor', text, thinking: assessment }]);
+    if (assessment) { setAssessments((prev) => [...prev, assessment]); if (assessment.mode) setCurrentMode(assessment.mode); }
     speak(text);
   };
 
@@ -124,10 +129,19 @@ export default function TutorialConversation() {
     if (ok) setIsRecording(true);
   };
 
-  const handleStopRecording = () => { stopListening(); setIsRecording(false); };
+  const handleStopRecording = () => {
+    stopListening();
+    setIsRecording(false);
+    // Auto-submit after brief pause for transcript to settle
+    setTimeout(() => {
+      const answer = (answerRef.current || currentAnswer).trim();
+      if (answer) {
+        handleSubmitAnswer(answer);
+      }
+    }, 500);
+  };
 
-  const handleSubmit = async () => {
-    const answer = (answerRef.current || currentAnswer).trim();
+  const handleSubmitAnswer = async (answer) => {
     if (!answer) return;
     setDisplayItems((prev) => [...prev, { type: 'message', role: 'student', text: answer }]);
     setCurrentAnswer('');
@@ -191,13 +205,7 @@ export default function TutorialConversation() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           {displayItems.map((item, i) => (
-            <TranscriptEntry
-              key={i}
-              role={item.role}
-              text={item.text}
-              thinking={item.thinking}
-              isNew={i === displayItems.length - 1}
-            />
+            <TranscriptEntry key={i} role={item.role} text={item.text} thinking={item.thinking} />
           ))}
 
           {isLoading && !isFinishing && (
@@ -205,9 +213,9 @@ export default function TutorialConversation() {
               <div className="label-caps pt-1.5">Supervisor</div>
               <div className="supervisor-block p-4">
                 <div className="flex gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--ink-faint)' }} />
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--ink-faint)', animationDelay: '0.2s' }} />
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--ink-faint)', animationDelay: '0.4s' }} />
+                  {[0, 0.2, 0.4].map((d) => (
+                    <span key={d} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--ink-faint)', animationDelay: `${d}s` }} />
+                  ))}
                 </div>
               </div>
             </div>
@@ -217,50 +225,54 @@ export default function TutorialConversation() {
             <div className="text-center py-8 animate-fade-in">
               <div className="label-caps mb-2">Preparing report</div>
               <p className="serif text-lg" style={{ color: 'var(--ink-muted)' }}>Reviewing the full conversation...</p>
-            </div>
-          )}
+            </div>)}
           <div ref={scrollRef} />
         </div>
 
-        {/* Input */}
+        {/* Input — big centered record button */}
         {!isLoading && !isFinishing && (
-          <div className="border-t px-6 py-5" style={{ borderColor: 'var(--rule-light)' }}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="label-caps">Your turn</span>
-              <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Tap mic to record</span>
-            </div>
-            <div className="flex items-end gap-3">
-              <div className="flex-1 rounded-xl border px-4 py-3 text-sm min-h-[48px]"
+          <div className="flex-1 flex flex-col items-center justify-center py-8 gap-4">
+            {currentAnswer ? (
+              <div className="w-full max-w-lg rounded-xl border px-4 py-3 text-sm"
                 style={{ borderColor: 'var(--rule)', background: 'var(--panel)' }}>
-                {isRecording ? (
-                  <span className="flex items-center gap-2" style={{ color: 'var(--oxblood)' }}>
-                    <span className="w-2 h-2 rounded-full animate-pulse-record" style={{ background: 'var(--oxblood)' }} />
-                    Listening...
-                  </span>
-                ) : currentAnswer ? (
-                  <span>{currentAnswer}</span>
-                ) : (
-                  <span style={{ color: 'var(--ink-faint)' }}>Speak clearly. Aim for precision, not length.</span>
-                )}
+                {currentAnswer}
               </div>
+            ) : !isRecording && (
+              <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>
+                Your turn — speak clearly, aim for precision
+              </p>
+            )}
+
+            {isRecording && (
+              <p className="text-sm flex items-center gap-2" style={{ color: 'var(--oxblood)' }}>
+                <span className="w-2.5 h-2.5 rounded-full animate-pulse-record" style={{ background: 'var(--oxblood)' }} />
+                Listening...
+              </p>
+            )}
+
+            <div className="flex items-center gap-4">
               {!isRecording && currentAnswer.trim() ? (
-                <button onClick={handleSubmit}
-                  className="rounded-xl px-5 py-3 text-sm font-medium text-white"
+                <button onClick={() => handleSubmitAnswer((answerRef.current || currentAnswer).trim())}
+                  className="w-20 h-20 rounded-full text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
                   style={{ background: 'var(--indigo)' }}>
-                  Submit
+                  <ArrowRight className="w-8 h-8" />
                 </button>
               ) : (
                 <button onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  className="rounded-xl px-4 py-3 text-white flex items-center gap-2"
+                  className="w-20 h-20 rounded-full text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
                   style={{ background: isRecording ? 'var(--oxblood)' : 'var(--ink)' }}>
-                  {isRecording ? <Square className="w-4 h-4 fill-white" /> : <Mic className="w-4 h-4" />}
-                  <span className="text-sm">{isRecording ? 'Stop' : 'Record'}</span>
+                  {isRecording ? <Square className="w-8 h-8 fill-white" /> : <Mic className="w-8 h-8" />}
                 </button>
               )}
             </div>
-            {roundCount >= 2 && (
+
+            <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+              {isRecording ? 'Click to stop' : currentAnswer.trim() ? 'Click to submit' : 'Press R or click to record'}
+            </span>
+
+            {roundCount >= 2 && !isRecording && (
               <button onClick={() => handleFinish()}
-                className="mt-3 w-full text-center text-xs py-2 flex items-center justify-center gap-1"
+                className="mt-2 text-xs flex items-center gap-1"
                 style={{ color: 'var(--ink-muted)' }}>
                 End tutorial & see report <ArrowRight className="w-3 h-3" />
               </button>

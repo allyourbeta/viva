@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, Square, Keyboard, Clock } from 'lucide-react';
+import { Mic, Square, Keyboard, Clock, ArrowRight } from 'lucide-react';
 import useSessionStore from '../store/sessionStore';
 import { isSupported, startListening, stopListening } from '../services/speechService';
 import { startChunkedAnalysis, stopChunkedAnalysis, getCallCount } from '../services/chunkedAnalysis';
@@ -92,6 +92,14 @@ export default function VoiceRecorder() {
     setIsRecording(false);
     setRecordingDuration(elapsed);
     stopChunkedAnalysis();
+    // Auto-submit after brief pause for final transcript to settle
+    setTimeout(() => {
+      const finalTranscript = (transcriptRef.current || transcript).trim();
+      if (finalTranscript) {
+        setTranscript(finalTranscript);
+        setStep('tutorial');
+      }
+    }, 500);
   };
 
   const handleStopAndSubmit = useCallback(() => {
@@ -115,41 +123,38 @@ export default function VoiceRecorder() {
   const remaining = MAX_RECORDING_SECONDS - elapsed;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center">
-        <h2 className="text-xl font-serif font-bold text-warm-900 mb-1">
-          Explain: <span className="text-primary-600">{topic}</span>
+        <h2 className="serif text-3xl font-semibold tracking-tight">
+          Explain: <span style={{ color: 'var(--indigo)' }}>{topic}</span>
         </h2>
-        <p className="text-sm text-warm-500">
+        <p className="text-base mt-2" style={{ color: 'var(--ink-muted)' }}>
           Talk through what you know in under a minute. Be messy — that's the point.
         </p>
       </div>
 
       {!showTextFallback ? (
-        <div className="flex flex-col items-center gap-6 py-8">
+        <div className="flex flex-col items-center gap-6">
           {/* Record button */}
           <button
             onClick={isRecording ? handleStopRecording : handleStartRecording}
-            className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${
-              isRecording
-                ? 'bg-red-500 hover:bg-red-600 animate-pulse-record'
-                : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-600/20'
-            }`}
+            className="w-28 h-28 rounded-full flex items-center justify-center transition-all shadow-lg"
+            style={{
+              background: isRecording ? 'var(--oxblood)' : 'var(--indigo)',
+            }}
           >
-            {isRecording ? (
-              <Square className="w-8 h-8 text-white fill-white" />
-            ) : (
-              <Mic className="w-8 h-8 text-white" />
-            )}
+            {isRecording
+              ? <Square className="w-10 h-10 text-white fill-white" />
+              : <Mic className="w-10 h-10 text-white" />}
           </button>
 
-          {/* Timer with remaining time */}
+          {/* Timer */}
           <div className="text-center">
-            <span className={`font-mono text-2xl ${isRecording ? 'text-red-500' : 'text-warm-400'}`}>
+            <span className="font-mono text-3xl" style={{ color: isRecording ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
               {formatTime(elapsed)}
             </span>
             {isRecording && (
-              <p className={`text-xs mt-1 ${remaining <= 10 ? 'text-red-400' : 'text-warm-400'}`}>
+              <p className="text-sm mt-1" style={{ color: remaining <= 10 ? 'var(--oxblood)' : 'var(--ink-faint)' }}>
                 {remaining}s remaining
               </p>
             )}
@@ -157,54 +162,47 @@ export default function VoiceRecorder() {
 
           {/* Background analysis indicator */}
           {isRecording && bgAnalysisCount > 0 && (
-            <p className="text-xs text-primary-400 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
+            <p className="text-sm flex items-center gap-1" style={{ color: 'var(--indigo)' }}>
+              <Clock className="w-4 h-4" />
               Supervisor is already listening...
             </p>
           )}
 
           {/* Live transcript */}
           {interimText && (
-            <div className="w-full max-h-32 overflow-y-auto text-sm text-warm-500 bg-warm-100 rounded-xl p-4 leading-relaxed">
+            <div className="w-full rounded-xl p-5 text-base leading-relaxed"
+              style={{ background: 'var(--surface)', border: '1px solid var(--rule)', color: 'var(--ink-muted)' }}>
               {interimText}
             </div>
           )}
 
           {/* Mic fallback */}
           {!isRecording && (
-            <button
-              onClick={() => setShowTextFallback(true)}
-              className="text-xs text-warm-400 hover:text-warm-500 flex items-center gap-1"
-            >
-              <Keyboard className="w-3 h-3" /> Having mic issues? Type instead
+            <button onClick={() => setShowTextFallback(true)}
+              className="text-sm flex items-center gap-1" style={{ color: 'var(--ink-faint)' }}>
+              <Keyboard className="w-4 h-4" /> Having mic issues? Type instead
             </button>
           )}
         </div>
       ) : (
         <div className="space-y-3">
-          <textarea
-            value={textInput}
-            onChange={(e) => setTextInput(e.target.value)}
-            placeholder="Type your explanation here..."
-            rows={8}
-            className="w-full px-4 py-3 rounded-xl border border-warm-200 bg-white text-warm-900 placeholder:text-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors resize-none"
-            autoFocus
-          />
-          <button
-            onClick={() => setShowTextFallback(false)}
-            className="text-xs text-warm-400 hover:text-warm-500 flex items-center gap-1"
-          >
-            <Mic className="w-3 h-3" /> Switch back to voice
+          <textarea value={textInput} onChange={(e) => setTextInput(e.target.value)}
+            placeholder="Type your explanation here..." rows={6}
+            className="w-full px-5 py-4 rounded-xl text-base resize-none"
+            style={{ border: '1px solid var(--rule)', background: 'var(--surface)', color: 'var(--ink)' }}
+            autoFocus />
+          <button onClick={() => setShowTextFallback(false)}
+            className="text-sm flex items-center gap-1" style={{ color: 'var(--ink-faint)' }}>
+            <Mic className="w-4 h-4" /> Switch back to voice
           </button>
         </div>
       )}
 
-      {/* Submit — only when stopped and has content */}
-      {!isRecording && hasContent && (
-        <button
-          onClick={handleSubmit}
-          className="w-full py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-colors"
-        >
+      {/* Text fallback still needs a submit button */}
+      {!isRecording && showTextFallback && textInput.trim() && (
+        <button onClick={handleSubmit}
+          className="w-full py-4 rounded-xl text-white text-lg font-semibold transition-transform hover:scale-[1.01]"
+          style={{ background: 'var(--indigo)' }}>
           Submit to Your Supervisor →
         </button>
       )}
